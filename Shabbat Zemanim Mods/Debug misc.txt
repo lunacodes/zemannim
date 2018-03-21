@@ -1,0 +1,39 @@
+error info
+SHABBAT ZEMANNIM
+Shabbat Times for Mar 09, 2018
+Brooklyn, NY US
+כ״ב בַּאֲדָר תשע״ח
+פרשת ויקהל־פקודי
+Candle Lighting (18 min): 5:37 PM
+Sunset Friday: 5:55 PM
+Haḇdala (20 min): 6:15 PM
+General debug info
+
+Current PHP version: 7.0.22
+Latlong URL is http://api.geonames.org/postalCodeLookupJSON?formatted=true&postalcode=11229&country=US&date=1520553600&username=adatosystems&style=full
+Lat and Long is: 40.601094 and -73.94749
+Friday URL is http://api.geonames.org/timezoneJSON?lat=40.601094&lng=-73.94749&date=2018-03-09&username=adatosystems
+Saturday URL is http://api.geonames.org/timezoneJSON?lat=40.601094&lng=-73.94749&date=2018-03-10&username=adatosystems
+Time zone is America/New_York, tzoffset is , dstoffset is and offset is 
+Friday timestamp: 1520553600 and Friday text is Mar 09, 2018 
+Saturday timestamp: 1520640000 and Saturday text: 2018-03-10 
+Friday Sunset: 2018-03-09 17:55 
+Saturday Sunset: 2018-03-09 17:55 
+hebcal URL is http://www.hebcal.com/hebcal/?v=1&cfg=json&nh=off&nx=off&year=now&month=x&ss=off&mf=off&c=off&s=on&i=off&lg=h
+Hebdate URL is http://www.hebcal.com/converter/?cfg=json&gy=2018&gm=3&gd=9&g2h=1
+Hebcal jewish date URL: http://www.hebcal.com/hebcal/?v=1;nh=off;nx=off;year=2018;month=x;ss=off;mf=off;c=off;s=on;i=off;lg=h
+Weekday number: 2
+halachichour: 
+plaginseconds: 
+
+
+Notes:
+    $latlongurl no longer being used in Isaac's version
+    New code starts at line 84
+
+    74.72.240.212http://api.ipinfodb.com/v3/ip-city/?key=15fd47f9a1419a3ab10a17e9f655cfff81ca7278fc86f9337a2dd334d24425fb
+
+
+    Location: 40.7143-74.006
+
+    Bug: When near Midnight, everything just displays 12AM

@@ -1,0 +1,58 @@
+https://l.messenger.com/l.php?u=http%3A%2F%2Fipinfodb.com%2Fregister&h=ATN9x9VPJUWywCkqI9Iv3FrfrTOJocYKE-fiUrWWDoADvseVoGQyhp2sJhIZ3fu1nepE0k2RgQFwx2fggdC5DohmruPnR-S365YPzzHP-CaVjGAMLBcvUjWi9iZk8z6G
+
+http://ipinfodb.com/register
+
+15fd47f9a1419a3ab10a17e9f655cfff81ca7278fc86f9337a2dd334d24425fb
+Kk
+
+
+https://www.hebcal.com/home/197/shabbat-times-rest-api
+https://www.hebcal.com/home/category/developers/page/3
+http://www.hebcal.com/home/195/jewish-calendar-rest-api
+http://www.geonames.org/export/web-services.html
+https://stackoverflow.com/questions/409999/getting-the-location-from-an-ip-address
+https://css-tricks.com/snippets/php/detect-location-by-ip/
+
+
+https://stackoverflow.com/questions/3003145/how-to-get-the-client-ip-address-in-php
+https://www.google.com/search?q=php+get+device+location&source=lnt&tbs=qdr:y&sa=X&ved=0ahUKEwjZn-rAkNjZAhXGxFkKHSktCKQQpwUIIA&biw=1366&bih=613
+https://www.codexworld.com/how-to/html5-geolocation-not-working-chrome/
+http://ip-api.com/docs/
+https://developers.google.com/maps/documentation/geolocation/intro
+https://console.developers.google.com/apis/credentials?project=tranquil-marker-197217
+http://www.andrew-kirkpatrick.com/2011/10/google-geocoding-api-with-php/
+
+
+On staging site, I don't see the IP Address - this is something Isaac changed then...
+
+Possible Root Issues:
+    update() is falsely returning that the new instance is set correctly??
+    It's reading the file contents from the JSON data, and not deleting them, and appending, instead of overwriting
+        This may be rooted in the API
+
+
+array(11) {
+  [0]=>
+  string(2) "OK"
+  [1]=>
+  string(0) ""
+  [2]=>
+  string(13) "74.72.240.212"
+  [3]=>
+  string(2) "US"
+  [4]=>
+  string(13) "United States"
+  [5]=>
+  string(8) "New York"
+  [6]=>
+  string(13) "New York City"
+  [7]=>
+  string(5) "10116"
+  [8]=>
+  string(7) "40.7143"
+  [9]=>
+  string(7) "-74.006"
+  [10]=>
+  string(6) "-05:00"
+}
+tzurl: http://api.geonames.org/timezoneJSON?lat=40.7143&lng=-74.006&date=2018-03-06&username=adatosystemstzjd: Array
