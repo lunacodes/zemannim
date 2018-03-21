@@ -4,6 +4,12 @@
  * Template Name: Geolocation Test
  */
 
+header("Access-Control-Allow-Origin: *");
+
+add_action( 'wp_head', 'allow_access_control' );
+function allow_access_control() {
+    header("Access-Control-Allow-Origin: *");
+}
 wp_enqueue_script( 'jquery' );
 ?> 
 
@@ -24,14 +30,19 @@ get_template_part( 'tpl/tpl', 'page-title' ); ?>
 <!-- <script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?key=AIzaSyDFrCM7Ao83pwu_avw-53o7cV0Ym7eLqpc" type="text/javascript"></script> -->
 <br>
 <div id="locationAwesome" style="border: 1px solid green;"></div>
-<div id="Awesome2" style="border: 1px solid blue;"></div>
+<div id="Awesome2" style="border: 1px solid blue;">
+    <script type="text/javascript" charset="utf-8"
+ src="//www.hebcal.com/etc/hdate-he.js"></script>
+
+</div>
 
 
 <script type="text/javascript" defer>
     var x = document.getElementById("locationB");
     let latLong = null;
     var awesome = document.getElementById("locationAwesome");
-
+    // var hebCalQueryStr = buildHebCalQuery();
+    // console.log(hebCalQueryStr);
     // var hebCalQueryStr = encodeURIComponent(buildHebCalQuery());
     // console.log("hebCalQuery1: ", hebCalQueryStr)
     function getLocationB() {
@@ -87,61 +98,64 @@ get_template_part( 'tpl/tpl', 'page-title' ); ?>
         console.log(lat);
     }
 
-    function listen(pos) {
-        console.log("listen worked!");
-        var pos1 = pos;
-        // var hebCalQueryStr = buildHebCalQuery();
-        // console.log(hebCalQueryStr);
-        let fileContents = null;
-        function readContents(events) {
-            fileContents = this.responseText;
-            // console.log(fileContents);
-        }
+//     function listen(pos) {
+//         console.log("listen worked!");
+//         var pos1 = pos;
+//         // var hebCalQueryStr = buildHebCalQuery();
+//         // console.log(hebCalQueryStr);
+//         let fileContents = null;
+//         function readContents(events) {
+//             fileContents = this.responseText;
+//             // console.log(fileContents);
+//         }
 
-        // Get the Data from the Hebcal URL
-        // let xmlhttp = new XMLHttpRequest();
-        // xmlhttp.addEventListener("load", readContents, true);
-        // awesome.addEventListener("load", (e) => {console.log("Event", e)});
-        // xmlhttp.open("GET", hebCalQueryStr, true);
-        // xmlhttp.send();
-        // console.log(xmlhttp);
+//         // Get the Data from the Hebcal URL
+// /*        let xmlhttp = new XMLHttpRequest();
+//         xmlhttp.addEventListener("load", readContents, true);
+//         awesome.addEventListener("load", (e) => {console.log("Event", e)});
+//         xmlhttp.open("GET", hebCalQueryStr, true);
+//         xmlhttp.setRequestHeader('Access-Control-Allow-Origin', 'https://hebcal.com');
+//         xmlhttp.send();
+//         console.log(xmlhttp);*/
 
-        jQuery(document).ready(function($) {
-            var d = new Date();
-            var year = d.getFullYear();
-            var month = '' + (d.getMonth() + 1);
-            var day = '' + d.getDate();
+//         jQuery(document).ready(function($) {
+//             var d = new Date();
+//             var year = d.getFullYear();
+//             var month = '' + (d.getMonth() + 1);
+//             var day = '' + d.getDate();
 
-            // var hebCalQuery = "https://hebcal.com/convert/?cfg=json&gy=" + year + "&gm=" + month + "&gd=" + day + "&g2h=1";
+//             var hebCalQuery = encodeURI("https://hebcal.com/convert/?cfg=json&gy=" + year + "&gm=" + month + "&gd=" + day + "&g2h=1");
+//             console.log(hebCalQuery);
 
-            $.ajax({
-                crossDomain: true,
-                type: 'GET',
-                dataType: 'json',
-                url: "https://hebcal.com/convert/?cfg=json&gy=2018&gm=3&gd=21&g2h=1",
-                cache: true,
-            }).done(function(data) {
-                console.log(data);
-            });
-        });
+//             $.ajax({
+//                 type: 'GET',
+//                 url: hebCalQuery.toString(),
+//                 headers: {
+//                     'Access-Control-Allow-Origin': 'http://hebcal.com/convert/'
+//                 },
+//                 cache: true
+//             }).done(function(data) {
+//                 console.log(data);
+//             });
+//         });
 
-        // Not the ideal solution
-        function doWork() {
-            if (fileContents === null) {
-                window.setTimeout(doWork, 100);
-                return;
-            }
-            // the hebDateStr here is an unnecessary extra step
-            // steps could be combined
-            var hebDate = JSON.parse(fileContents);
-            console.log(hebDate);
-            var hebDateStr = hebDate["hebrew"];
-            console.log(hebDateStr);
-            awesome.innerHTML = "Hebrew Date: " + hebDateStr;
-        }
-        doWork();
+//         // Not the ideal solution
+//         function doWork() {
+//             if (fileContents === null) {
+//                 window.setTimeout(doWork, 100);
+//                 return;
+//             }
+//             // the hebDateStr here is an unnecessary extra step
+//             // steps could be combined
+//             var hebDate = JSON.parse(fileContents);
+//             console.log(hebDate);
+//             var hebDateStr = hebDate["hebrew"];
+//             console.log(hebDateStr);
+//             // awesome.innerHTML = "Hebrew Date: " + hebDateStr;
+//         }
+//         doWork();
 
-    }
+//     }
 
     function buildHebCalQuery() {
         // var dateInfo = getDateInfo();
@@ -149,6 +163,7 @@ get_template_part( 'tpl/tpl', 'page-title' ); ?>
         var year = d.getFullYear();
         var month = '' + (d.getMonth() + 1);
         var day = '' + d.getDate();
+        console.log("y, m d", year, month, day);
 
         var hebCalQuery = "https://hebcal.com/convert/?cfg=json&gy=" + year + "&gm=" + month + "&gd=" + day + "&g2h=1";
         return hebCalQuery;
@@ -201,6 +216,9 @@ get_template_part( 'tpl/tpl', 'page-title' ); ?>
     // jQuery(document).ready(function($) {
     //     $.ajax({
     //         url: "https://api.geonames.org/timezoneJSON?lat=40.7143&lng=-74.006&date=2018-03-20&username=lunacodes",
+    //         headers: {
+    //             'Access-Control-Allow-Origin': 'https://api.geonames.org'
+    //         },
     //         success: function(data) {
     //             // console.log($(data));
     //             console.log("Success Yo!");
@@ -208,20 +226,21 @@ get_template_part( 'tpl/tpl', 'page-title' ); ?>
     //     });
     // });
 
-    // let xmltzc = new XMLHttpRequest();
-    // xmltzc.addEventListener("load", readTzContents, false);
-    // tzAwesome.addEventListener("load", (e) => {console.log(e)});
-    // xmltzc.open("GET", "https://api.geonames.org/timezoneJSON?lat=40.7143&lng=-74.006&date=2018-03-20&username=lunacodes", true);
-    // xmltzc.send();
+    let xmltzc = new XMLHttpRequest();
+    xmltzc.addEventListener("load", readTzContents, false);
+    tzAwesome.addEventListener("load", (e) => {console.log(e)});
+    xmltzc.open("GET", "http://api.geonames.org/timezoneJSON?lat=40.7143&lng=-74.006&date=2018-03-20&username=lunacodes", true);
+    xmltzc.withCredentials = true;
+    xmltzc.send();
     
-    // function tzcDoWork() {
-    //     if (tzContents === null) {
-    //         window.setTimeout(doWork, 100);
-    //         return;
-    //     }
-    //     console.log(tzContents);
-    // }
-    // tzcDoWork();
+    function tzcDoWork() {
+        if (tzContents === null) {
+            window.setTimeout(tzcDoWork, 100);
+            return;
+        }
+        console.log(tzContents);
+    }
+    tzcDoWork();
 
     /* Note: I need the data from the Hebcal function */
     var timeZoneUrl = 'http://api.geonames.org/timezoneJSON?lat=40.7143&lng=-74.006&date=2018-03-20&username=lunacodes ';
