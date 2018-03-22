@@ -6,16 +6,10 @@
 
 wp_enqueue_script( 'jquery' );
 
-// add_action( 'wp_enqueue_scripts', 'enqueue_sun_calc' );
-// function enqueue_sun_calc() {
-//     wp_enqueue_script( 'sunCalc', get_stylesheet_directory_uri() . '/page-templates/suncalc-master/suncalc.js' );
-// }
 ?> 
 
+<!-- I don't know why Enqueueing these two scripts doesn't work... -->
 <script type="text/javascript" src="https://hasepharadi.com/staging/wp-content/themes/hasepharadi/page-templates/suncalc-master/suncalc.js?ver=4.9.4"></script>
-<script type="text/javascript">
-</script>
-
 <script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?key=AIzaSyDFrCM7Ao83pwu_avw-53o7cV0Ym7eLqpc" type="text/javascript"></script>
 
 <?php 
@@ -28,22 +22,38 @@ get_template_part( 'tpl/tpl', 'page-title' ); ?>
     <div class="main">
         <div id="standard_blog_full" class="twelve columns alpha omega">
 
-<div id="locationB" style="border: 1px solid red;"></div>
+<div id="zemanim_container">
+    <div id="zemanim_display" style="padding: 10px;">
+        <span id="zemanim_date"></span>
+        <span id="zemanim_city"></span>
+        <span id="zemanim_hebrew">
+            <script type="text/javascript" charset="utf-8" src="//www.hebcal.com/etc/hdate-he.js"></script><br>
+        </span>
+        <span id="zemanim_shema"></span>
+        <span id="zemanim_minha"></span>
+        <span id="zemanim_peleg"></span>
+        <span id="zemanim_sunset"></span>
+    </div>
+</div>
 
 <br>
-<div id="locationAwesome" style="border: 1px solid green;"></div>
-<div id="Awesome2" style="border: 1px solid blue;">
-    <script type="text/javascript" charset="utf-8"
- src="//www.hebcal.com/etc/hdate-he.js"></script>
+<div id="hebrew_date" style="border: 1px solid blue;">
 
 </div>
 
 
 <script type="text/javascript" defer>
-    var x = document.getElementById("locationB");
+    var z_date = document.getElementById("zemanim_date");
+    var z_city = document.getElementById("zemanim_city");
+    // var z_hebrew = document.getElementById("zemanim_hebrew");
+    var z_shema = document.getElementById("zemanim_shema");
+    var z_minha = document.getElementById("zemanim_minha");
+    var z_peleg = document.getElementById("zemanim_peleg");
+    var z_sunset = document.getElementById("zemanim_sunset");    var x = document.getElementById("zemanim_container");
+
     let latLong = null;
-    var awesome = document.getElementById("locationAwesome");
-    function getLocationB() {
+    var zemanim = document.getElementById("zemanim_display");
+    function getZemanimContainer() {
         // 'use strict';
         // x.innerHTML = "This is a test";
         if (navigator.geolocation) {
@@ -63,33 +73,71 @@ get_template_part( 'tpl/tpl', 'page-title' ); ?>
         var long = position.coords.longitude;
         // plug it into Geocode API
         var point = new google.maps.LatLng(lat, long);        new google.maps.Geocoder().geocode({'latLng': point}, function (res, status) {
-            var zip = res[0].formatted_address.match(/,\s\w{2}\s(\d{5})/);
+            // var zip = res[0].formatted_address.match(/,\s\w{2}\s(\d{5})/);
 
-            var city = res[5].formatted_address;
-            console.log("Zip code is " + zip[1]);
-            console.log("City: " + city);
-        x.innerHTML = "Latitude: " + lat +
-            "<br>Longitutde: " + long + 
-            "<br>Zip: " + zip[1] + 
-            "<br>City: " + city;
+            var response = res;
+            console.log(res);
+            // var city = res[5].formatted_address;
+            // var cityStr = res[1].formatted_address.toString();
 
-        console.log(lat, long);
+            if (res[1]) {
+                for (var i = 0; i < res.length; i++) {
+                    if (res[i].types[0] === "locality") {
+                        var city = res[i].address_components[0].short_name;
+                        // var state = res[i].address_components[2].short_name;
+                        console.log("City: ", city);
+                    } // end if loop 2
+
+                    if (res[i].types[0] === "neighborhood") {
+                        var neighborhood = res[i].address_components[0].long_name;
+                        // var state = res[i].address_components[2].short_name;
+                        console.log("Neighborhood: ", neighborhood);
+                    } // end if loop 2
+
+                    if (res[i].types[0] === "administrative_area_level_1") {
+                        // var city = res[i].address_components[0].short_name;
+                        var state = res[i].address_components[0].long_name;
+                        console.log("State: ", state);
+                    } // end if loop 2
+                } // end for loop
+            } // end if loop 1
+
+            // var city2 = res[2].formatted_address;
+            // console.log(city2);
+            cityStr =  city + ", " + state + ", " + "United States" + "<br>" + neighborhood;
+            console.log(cityStr);
+            // zemanim.innerHTML = "Five";
+            // var cityStr = res[1].address_components
+            // console.log(cityStr);
+            // console.log("Zip code is " + zip[1]);
+            // console.log("City: " + city);
+        // x.innerHTML = "Latitude: " + lat +
+        //     "<br>Longitutde: " + long + 
+        //     "<br>City: " + city;
+
+        // console.log(lat, long);
+        var geocoder = 
         window.lat = lat;
         window.long = long;
+        window.city = city
+        generateTimes(lat, long, cityStr);
         return latLong = [window.lat, window.long];
+
         });
 
-        console.log("LatLong1: ", lat, long);
-        var latLong = [window.lat, window.long];
-        console.log("latLong2: ", latLong);
+        // console.log("LatLong1: ", lat, long);
+        // var latLong = [window.lat, window.long];
+        // console.log("latLong2: ", latLong);
 
-        latLongTest(latLong);
-        positionTest(latLong);
+        // latLongTest(latLong);
+        // positionTest(latLong);
         // return latLong;
+        // generateTimes(lat, long, city2);
 
     }
 
-    getLocationB();
+    getZemanimContainer();
+
     function latLongTest(latLong) {
         console.log("Lat Long 1: ", latLong);
     }
@@ -97,45 +145,6 @@ get_template_part( 'tpl/tpl', 'page-title' ); ?>
     function positionTest(pos) {
         console.log("Position Test: ", pos);
     }
-
-    function buildHebCalQuery() {
-        // var dateInfo = getDateInfo();
-        var d = new Date();
-        var year = d.getFullYear();
-        var month = '' + (d.getMonth() + 1);
-        var day = '' + d.getDate();
-        console.log("y, m d", year, month, day);
-
-        var hebCalQuery = "https://hebcal.com/convert/?cfg=json&gy=" + year + "&gm=" + month + "&gd=" + day + "&g2h=1";
-        return hebCalQuery;
-    }
-
-    function formatDate() {
-        var d = new Date();
-        var month = '' + (d.getMonth() + 1);
-        var day = '' + d.getDate();
-        var year = d.getFullYear();
-        // console.log(d, month, day, year);
-
-        if (month.length <2) month = '0' + month;
-        if (day.length < 2) day = '0' + day;
-
-        return [year, month, day].join('-');
-    }
-
-    var yom_ymd = formatDate();
-    console.log("yom_ymd = ", yom_ymd);
-
-    // Timzone Stuff for Sunrise & Sunset
-    // var tzJd = {"sunrise":"2018-03-20 06:59","lng":-74.006,"countryCode":"US","gmtOffset":-5,"rawOffset":-5,"sunset":"2018-03-20 19:07","timezoneId":"America/New_York","dstOffset":-4,"dates":[{"date":"2018-03-20","sunrise":"2018-03-20 06:59","sunset":"2018-03-20 19:07"}],"countryName":"United States","time":"2018-03-20 14:37","lat":40.7143};
-    // console.log("tzJd: ", tzJd);
-    var tzJd = {"sunrise":"2018-03-22 06:56","lng":-74.006,"countryCode":"US","gmtOffset":-5,"rawOffset":-5,"sunset":"2018-03-22 19:10","timezoneId":"America/New_York","dstOffset":-4,"dates":[{"date":"2018-03-21","sunrise":"2018-03-21 06:58","sunset":"2018-03-21 19:09"}],"countryName":"United States","time":"2018-03-21 22:03","lat":40.7143};
-    var tzName = tzJd['timezoneId'];
-    // var offSet = tzJd['gmtOffset'];
-    var offSet;
-    var yomSunrise = tzJd['dates'][0]['sunrise'];
-    var yomSunset = tzJd['dates'][0]['sunset'];
-    console.log("Yom Sunrise: ", yomSunrise, '\n',  " Yom Sunset: ", yomSunset);
 
     function checkForDST() {
         Date.prototype.stdTimezoneOffset = function () {
@@ -156,21 +165,14 @@ get_template_part( 'tpl/tpl', 'page-title' ); ?>
     }
 
     var dstCheck = checkForDST();
+    /* Note: I may need to replace this check with the updated Data. Check a pre-DST date to be sure */
     if (dstCheck) {
-        offSet = Math.abs(tzJd['dstOffset']);
+        // offSet = Math.abs(tzJd['dstOffset']);
     }
 
     else {
-        offSet = Math.abs(tzJd['gmtOffset']);
+        // offSet = Math.abs(tzJd['gmtOffset']);
     }
-    offSetSec = offSet * 3600;
-    console.log("Offset: ", offSet);
-    console.log("offSetSec: ", offSetSec);
-
-
-    // var sunriseSec = yomSunriseDateTimeInt - offSet;
-    // var sunsetSec = yomSunsetDateTimeInt - offSet;
-    // console.log("sunriseSec: ", sunriseSec, "sunsetSec", sunsetSec);
 
     // Improved Method - uses SunCalc Library
     function formatTime(x) {
@@ -191,47 +193,60 @@ get_template_part( 'tpl/tpl', 'page-title' ); ?>
         return buildTimeStr;
     }
 
-    // Replace with generated lat & long
-    var times = SunCalc.getTimes(new Date(), 40.7443683, -73.95796779999999);
-    var sunriseObj = times.sunrise;
-    var sunriseStr = generateTimeStrings(sunriseObj);
-    var sunsetObj = times.sunset;
-    var sunsetStr = generateTimeStrings(sunsetObj);
-    console.log(times);
-    // console.log("Sunrise, Sunset: ", sunriseStr, sunsetStr);
+    function generateDateString(timeObj) {
+        var monthInt = timeObj.getMonth();
+        var monthList = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        var month = monthList[monthInt];
+        var day = formatTime(timeObj.getDate());
+        var year = timeObj.getFullYear();
+        var buildDateStr = "Times for " + month + " " + day + ", " + year;
+        return buildDateStr;
+    }
 
-    console.log("/// Begin DateTime Debug: ///");
-    var SunriseDateTimeInt = parseFloat((new Date(sunriseStr).getTime() / 1000) - offSetSec);
-    var SunsetDateTimeInt = parseFloat((new Date(yomSunset).getTime() / 1000) - offSetSec);
-    console.log("SunriseDateTimeInt: ", SunriseDateTimeInt);
-    console.log("SunsetDateTimeInt: ", SunsetDateTimeInt);
+    function generateTimes(lat, long, city) {
+        // console.log(lat, long);
+        // console.log(city);
+        var cityStr = city;
+        var times = SunCalc.getTimes(new Date(), lat, long);
+        var sunriseObj = times.sunrise;
+        var offSet = sunriseObj.getTimezoneOffset() / 60;
+        var offSetSec = offSet * 3600;
+        // console.log("Offset: ", offSet);
+        // console.log("offSetSec: ", offSetSec);
+        var dateObj = new Date();
+        var dateStr = generateDateString(dateObj);
+        var sunriseStr = generateTimeStrings(sunriseObj);
+        var sunsetObj = times.sunset;
+        var sunsetStr = generateTimeStrings(sunsetObj);
+        console.log(times);
+        console.log(dateStr);
+        // console.log("Sunrise: ", sunriseStr);
+        // console.log("Sunset: ", sunsetStr);
 
-    var yomSunriseDateTimeInt = parseFloat((new Date(yomSunrise).getTime() / 1000) - offSetSec);
-    var yomSunsetDateTimeInt = parseFloat((new Date(yomSunset).getTime() / 1000) - offSetSec);
-    console.log("yomSunriseDateTimeInt: ", yomSunriseDateTimeInt);
-    console.log("yomSunsetDateTimeInt: ", yomSunsetDateTimeInt);
-    console.log("/// End DateTime Debug ///");
+        // console.log("/// Begin DateTime Debug: ///");
+        var SunriseDateTimeInt = parseFloat((new Date(sunriseStr).getTime() / 1000) - offSetSec);
+        var SunsetDateTimeInt = parseFloat((new Date(sunsetStr).getTime() / 1000) - offSetSec);
+        var sunriseSec = SunriseDateTimeInt - offSet;
+        var sunsetSec = SunsetDateTimeInt - offSet;
 
-    console.log("/// Begin TimeSec Debug ///")
-    var sunriseSec = SunriseDateTimeInt - offSet;
-    var sunsetSec = SunsetDateTimeInt - offSet;
-    console.log("SunriseSec: ", sunriseSec);
-    console.log("SunsetSec: ", sunsetSec);
+        var latestShemaStr = '<span id="zmantitle">Latest Shema: </span>' + calculateLatestShema(sunriseSec, sunsetSec, offSetSec);
+        var earliestMinhaStr = '<span id="zmantitle">Earliest Minḥa: </span>' + calculateEarliestMinha(sunriseSec, sunsetSec, offSetSec);
+        var pelegHaMinhaStr = '<span id="zmantitle">Peleḡ HaMinḥa: </span>' + calculatePelegHaMinha(sunriseSec, sunsetSec, offSetSec);
+        var displaySunsetStr = '<span id="zmantitle">Sunset: </span>' + unixTimestampToDate(SunsetDateTimeInt+offSetSec);
+        // console.log("Sunset: ", displaySunset);
 
-    var yomSunriseSec = yomSunriseDateTimeInt - offSet;
-    var yomSunsetSec = yomSunsetDateTimeInt - offSet;
-    console.log("yomSunriseSec: ", yomSunriseSec);
-    console.log("yomSunsetSec: ", yomSunsetSec);
+        displayTimes(dateStr, cityStr, latestShemaStr, earliestMinhaStr, pelegHaMinhaStr, displaySunsetStr)
+        // zemanim.innerHTML = "This Worked";
 
-    console.log("/// End TimeSec Debug ///");
+        // Display Sunset
+    }
+
+    // console.log("/// End TimeSec Debug ///");
     function unixTimestampToDate(timestamp) {
         var date = new Date(timestamp * 1000);
         var hours = date.getHours();
         var ampm = "AM";
         var minutes = "0" + date.getMinutes();
-        // console.log("minutes1: ", minutes);
-        // console.log("minutes2: ", minutes.substr(-2));
-        // var seconds = "0" + date.getSeconds();
 
         if (hours > 12) {
             hours -= 12;
@@ -247,51 +262,49 @@ get_template_part( 'tpl/tpl', 'page-title' ); ?>
     }
 
     // Calculate Shema
-    function calculateLatestShema() {
+    function calculateLatestShema(sunriseSec, sunsetSec, offSetSec) {
         var halakhicHour = Math.abs((sunsetSec - sunriseSec) / 12);
         var shemaInSeconds = sunriseSec + (halakhicHour * 3) + offSetSec;
         var latestShema = unixTimestampToDate(shemaInSeconds);
-        // var parsedShema = parseFloat(latestShema);
-        // console.log("latestShema - Flat, Round, Floor, Ceiling", parsedShema, Math.round(parsedShema), Math.floor(parsedShema), Math.ceil(parsedShema));
-        var yomHalakhicHour = (yomSunsetSec - yomSunriseSec) / 12;
-        var yomShemaInSeconds = yomSunriseSec + (yomHalakhicHour * 3) + offSetSec;
-        var yomLatestShema = unixTimestampToDate(yomShemaInSeconds);
-        // console.log("Halakhic Hour: ", halakhicHour);
-        console.log("/// Begin Shema Debug ///")
-        console.log("Shema Debug: New Halakhic Hour, Shema In Seconds, Latest Shema", halakhicHour, shemaInSeconds, latestShema);
-        console.log("Shema Debug: Old Halakhic Hour, Shema In Seconds, Latest Shema", yomHalakhicHour, yomShemaInSeconds, yomLatestShema);
-        console.log("/// End Debug ///");
 
-        // console.log("Latest Shema: ", latestShema);
+        console.log("Latest Shema: ", latestShema);
+        return latestShema;
     }
 
-    calculateLatestShema();
-
-    function calculateEarliestMinha() {
+    function calculateEarliestMinha(sunriseSec, sunsetSec, offSetSec) {
         var halakhicHour = (sunsetSec - sunriseSec) / 12;
         var minhaInSeconds = sunriseSec + (halakhicHour * 6.5) + offSetSec;
         var earliestMinha = unixTimestampToDate(minhaInSeconds);
         // console.log("Halakhic Hour: ", halakhicHour);
-        console.log("Earliest Minḥa: ", earliestMinha);
 
+        console.log("Earliest Minḥa: ", earliestMinha);
+        return earliestMinha;
     }
 
-    calculateEarliestMinha();
-
-    function calculatePelegHaMinha() {
+    function calculatePelegHaMinha(sunriseSec, sunsetSec, offSetSec) {
         var halakhicHour = (sunsetSec - sunriseSec) / 12;
         var minhaInSeconds = sunsetSec - (halakhicHour * 1.25) + offSetSec;
         var pelegHaMinha = unixTimestampToDate(minhaInSeconds);
-        // console.log("Halakhic Hour: ", halakhicHour);
-        console.log("Peleḡ HaMinḥa: ", pelegHaMinha);
 
+        console.log("Peleḡ HaMinḥa: ", pelegHaMinha);
+        return pelegHaMinha;
     }
 
-    calculatePelegHaMinha();
+    function displayTimes(date, city, shema, minha, peleg, sunset) {
 
-    // Display Sunset
-    var displaySunset = unixTimestampToDate(yomSunsetDateTimeInt+offSetSec);
-    console.log("Sunset: ", displaySunset);
+        // var hebcalDate = '<script ' + 'type="text/javascript" charset="utf-8" src="//www.hebcal.com/etc/hdate-he.js"' + '></' + 'script>';
+
+        console.log(date, city, shema, minha, peleg, sunset);
+
+        z_date.innerHTML = date + "<br>";
+        z_city.innerHTML = city + "<br>";
+        // z_hebrew.innerHTML = hebrew + "<br>";
+        z_shema.innerHTML = shema + "<br>";
+        z_minha.innerHTML = minha + "<br>";
+        z_peleg.innerHTML = peleg + "<br>";
+        z_sunsetinnerHTML = sunset + "<br>";
+        // zemanim.innerHTML = date + "<br>" + city + "<br"> + hebcalDate +  "<br>" + shema + "<br>" + minha + "<br>" + peleg + "<br>" + sunset;
+    }
 </script>
 
 <br><br><br>
