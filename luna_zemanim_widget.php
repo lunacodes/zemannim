@@ -27,9 +27,11 @@ class Luna_Zemanim_Widget extends WP_Widget {
      * @param array $instance Saved values from database
      */
     public function widget( $args, $instance ) {
-        wp_enqueue_script( 'jquery' ); ?>
-        <!-- <script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?key=AIzaSyDFrCM7Ao83pwu_avw-53o7cV0Ym7eLqpc" type="text/javascript"></script> -->
-        
+        wp_enqueue_script( 'jquery' ); 
+        wp_enqueue_script( 'google-maps', 'http://maps.googleapis.com/maps/api/js?key=AIzaSyDFrCM7Ao83pwu_avw-53o7cV0Ym7eLqpc' );
+        wp_enqueue_script( 'suncalc-master', plugins_url( '/suncalc-master/suncalc.js?ver=4.9.4', __FILE__ ) );
+        ?>
+
         <?php
         extract( $args );
         $title = apply_filters( 'widget_title', $instance['title'] );
@@ -63,23 +65,13 @@ class Luna_Zemanim_Widget extends WP_Widget {
 
         $hebdate = file_get_contents('http://www.hebcal.com/shabbat/?cfg=json&geonameid=3448439&m=50');
         $hebdatejd = json_decode($hebdate, true);
-        // var_dump($hebdatejd);
-        // echo( $hebdatejd['location']['city'] );
-        // var_dump($response);
-        // $test1 = $response['link'];
-        // $test2 = $response[1];
-        // var_dump($test1);
-        // echo("Responses: $test1 $test2");        
-        // foreach ( $response as $value ) {
-        //     echo( $value . "<br>" );
-        // }
 
         function get_location()
         {?>
             <script type="text/javascript">
             var options = {
               enableHighAccuracy: true,
-              timeout: 5000,
+              // timeout: 5000,
               maximumAge: 0
             };
 
@@ -136,22 +128,15 @@ class Luna_Zemanim_Widget extends WP_Widget {
         <?php }
         get_location();
 
-
-        $ip = '';
-        $ip = !empty($_SERVER['HTTP_X_FORWARDED_FOR']) ? $_SERVER['HTTP_X_FORWARDED_FOR'] : $_SERVER['REMOTE_ADDR'];
-        echo("ip: $ip");
-
-
         function luna_run_zemanim_widget() {
             // $zemanim_geolocate = '<script type="text/javascript" src="/wp-content/plugins/luna-zemanim-widget/zemanim-geolocate.js"></script>';
-            // $sun_calc = '<script type="text/javascript" src="/wp-content/plugins/daily-zman-widget/suncalc-master/suncalc.js?ver=4.9.4"></script>';
             // $fallback_url = "http://api.ipstack.com/96.239.116.76?access_key=62e3a66a273f35e0bde207e433850072";
 
-            // $ch_fb = curl_init();
-            // echo("ch: $ch_fb");
-            // curl_setopt($ch_fb, CURLOPT_URL, $fallback_url);
-            // curl_setopt($ch_fb, CURLOPT_RETURNTRANSFER, 1);
-            // $response_fb = json_decode(curl_exec($ch_fb), true);
+            // $ch = curl_init();
+            // echo("ch: $ch");
+            // curl_setopt($ch, CURLOPT_URL, $fallback_url);
+            // curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+            // $response_fb = json_decode(curl_exec($ch), true);
 
             // if ( $response_fb['status'] != 'OK' ) {
             //     return null;
@@ -160,21 +145,21 @@ class Luna_Zemanim_Widget extends WP_Widget {
             // print_r($response_fb);
 
             // set IP address and API access key 
-            $ip_fb = '';
-            $ip_fb = !empty($_SERVER['HTTP_X_FORWARDED_FOR']) ? $_SERVER['HTTP_X_FORWARDED_FOR'] : $_SERVER['REMOTE_ADDR'];
-            echo("ip_fb: $ip_fb");
-            // $ip_fb = '134.201.250.155';
+            $ip = '';
+            $ip = !empty($_SERVER['HTTP_X_FORWARDED_FOR']) ? $_SERVER['HTTP_X_FORWARDED_FOR'] : $_SERVER['REMOTE_ADDR'];
+            echo("ip: $ip");
+            // $ip = '134.201.250.155';
             $access_key = '62e3a66a273f35e0bde207e433850072';
 
             // Initialize CURL:
-            $ch_fb = curl_init('http://api.ipstack.com/'.$ip_fb.'?access_key='.$access_key.'');
-            // echo("ch_fb: $ch_fb");
-            curl_setopt($ch_fb, CURLOPT_RETURNTRANSFER, true);
+            $ch = curl_init('http://api.ipstack.com/'.$ip.'?access_key='.$access_key.'');
+            // echo("ch: $ch");
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 
             // Store the data:
-            $json = curl_exec($ch_fb);
-            // echo("ch_fb json: $json");
-            curl_close($ch_fb);
+            $json = curl_exec($ch);
+            // echo("ch json: $json");
+            curl_close($ch);
 
             // Decode JSON response:
             $api_result = json_decode($json, true);
