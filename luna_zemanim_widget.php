@@ -3,6 +3,12 @@
  * Plugin Name: Luna Zemanim Widget
  */
 
+/**
+ * NOTE: I need to factor out the overlapping code in getGeoDetails and showPosition
+ * I probably want to replace a lot of the var statements w/ let statements
+ * Pretty sure I can delete getSunriseObj
+ * NOTE: PHP cURL is *much faster*
+ */
 class Luna_Zemanim_Widget extends WP_Widget {
 
   /**
@@ -69,8 +75,8 @@ class Luna_Zemanim_Widget extends WP_Widget {
   function getClientIP() {
     $client_ip = '';
     $client_ip = !empty($_SERVER['HTTP_X_FORWARDED_FOR']) ? $_SERVER['HTTP_X_FORWARDED_FOR'] : $_SERVER['REMOTE_ADDR'];
-    echo('<br>');
-    echo("ip: $client_ip <br>");
+    // echo('<br>');
+    // echo("ip: $client_ip <br>");
     // $ip = '134.201.250.155';
     return $client_ip;
   }
@@ -125,15 +131,52 @@ class Luna_Zemanim_Widget extends WP_Widget {
     <?php echo("var pos = " . $latLng . ';') ?>
     console.log(pos);
 
-    function getGeoDetailsByIP(position) {
-      var pos2 = position;
-      console.log("pos test: ", pos2[0], pos2[1]);
+    function getLocation()
+      {
+        var options = {
+          enableHighAccuracy: true,
+          // timeout: 5000,
+          maximumAge: 0
+        };
+
+        function error(err) {
+          console.warn(`ERROR(${err.code}): ${err.message}`);
+        zemanim.innerHtml = "Please enable location services to display the most up-to-date Zemanim";
+          console.log("going by ip instead!");
+          getLatLngByIP(pos);
+
+        }
+
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(getLatLngByGeo, error, options);
+        }
+
+      }
+
+    function getLatLngByGeo(position) {
+      console.log("navigator.geolocation is geolocating");
+      var pos = position;
+      var lat = pos.coords.latitude;
+      var long = pos.coords.longitude;
+
+      getGeoDetails(lat, long);
+    }
+
+    function getLatLngByIP(position) {
+      var pos = position;
+      console.log("pos test: ", pos[0], pos[1]);
       // console.log(JSON.stringify(pos));
       // console.log(pos.toString());
-      var lat2 = parseFloat(pos2[0]);
-      var long2 = parseFloat(pos2[1]);
-      console.log(lat2, long2);
-      var point = new google.maps.LatLng(lat2, long2);        new google.maps.Geocoder().geocode({'latLng': point}, function (res, status) {
+      var lat = parseFloat(pos[0]);
+      var long = parseFloat(pos[1]);
+      getGeoDetails(lat, long);
+    }
+
+    function getGeoDetails(lat_crd, long_crd) {
+      let lat = lat_crd;
+      let long = long_crd;
+
+      var point = new google.maps.LatLng(lat, long);        new google.maps.Geocoder().geocode({'latLng': point}, function (res, status) {
 
         var response = res;
 
@@ -141,23 +184,26 @@ class Luna_Zemanim_Widget extends WP_Widget {
           for (var i = 0; i < res.length; i++) {
             if (res[i].types[0] === "locality") {
               var city = res[i].address_components[0].short_name;
+              // var city = "";
             } // end if loop 2
 
             if (res[i].types[0] === "neighborhood") {
               var neighborhood = res[i].address_components[0].long_name;
+              // var neighborhood = "";
             } // end if loop 2
 
             if (res[i].types[0] === "administrative_area_level_1") {
               var state = res[i].address_components[0].long_name;
+              // var state = "";
             } // end if loop 2
           } // end for loop
         } // end if loop 1
         console.log(res);
 
-        var cityStr =  city + ", " + state + ", " + "United States" + "<br>" + neighborhood;
+        var cityStr =  city + ", " + state + "<br>" + neighborhood;
         console.log(cityStr);
 
-        generateTimes(lat2, long2, cityStr);
+        generateTimes(lat, long, cityStr);
         // return latLong = [window.lat, window.long];
       });
   }
@@ -308,20 +354,14 @@ class Luna_Zemanim_Widget extends WP_Widget {
     // zemanim.innerHTML = date + "<br>" + city + "<br"> + hebcalDate +  "<br>" + shema + "<br>" + minha + "<br>" + peleg + "<br>" + sunset;
   }
 
-
   jQuery(document).ready( () => {
-      var latLng = <?php echo($latLng); ?>;
-      getGeoDetailsByIP(latLng);
+      // var latLng = <?php echo($latLng); ?>;
+      // getGeoDetails(latLng);
+      getLocation();
     })
-
 
 </script>
 <?php
-  // function getLatLngByGeo() {
-     
-  // }
-  
-
 
     /**
      * Setup for Date, Time, Timezone, etc
@@ -332,67 +372,7 @@ class Luna_Zemanim_Widget extends WP_Widget {
     $yom_txt = date("M d, Y", $yom);
     $yom_ymd = date("Y-m-d", $yom);
 
-    $lat = $latLng[0];
-    $long = $latLng[1];
 
-    // create url for cURL query
-    $tzurl = "http://api.geonames.org/timezoneJSON?lat=".$lat."&lng=".$long."&date=".$yom_ymd."&username=adatosystems";
-    // luna debug check url
-    // echo("tzurl: $tzurl");
-    
-    // Get all remaining info: time zone, sunrise, etc.
-    $ch = curl_init();
-      curl_setopt($ch, CURLOPT_URL, $tzurl);
-        curl_setopt($ch, CURLOPT_HEADER, false);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        $tz = curl_exec($ch);
-      curl_close($ch);
-    $tzjd = json_decode(utf8_encode($tz),true);
-    // echo "<br>tzjd: $tzjd<br>";
-    // var_dump($tzjd);
-
-    $ch = curl_init();
-      curl_setopt($ch, CURLOPT_URL, $tzurl);
-        curl_setopt($ch, CURLOPT_HEADER, false);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        $tz = curl_exec($ch);
-      curl_close($ch);
-    $tzjd = json_decode(utf8_encode($tz),true);
-    // echo "tzjd: $tzjd";
-    $tzname = $tzjd['timezoneId'];
-    $yomsunrise = $tzjd['dates'][0]['sunrise'];
-    $yomsunset = $tzjd['dates'][0]['sunset'];
-    $yomsunrisedatetime = strtotime($yomsunrise);
-    $yomsunsetdatetime = strtotime($yomsunset);
-    $sunrisesec = $yomsunrisedatetime+$offset;
-    $sunsetsec = $yomsunsetdatetime+$offset;
-
-
-
-
-
-  function getSunriseObj($lat, $long) {
-    echo("$Lat: lat, Long: $long \n");
-    $sunrise = date_sunrise(time(), SUNFUNCS_RET_STRING, $lat, $long);
-    echo("Sunrise: $sunrise \n");
-    // echo("stuff");
-  }
-  // function getSunrise($value='')
-  //   {
-      
-  //   }  
-
-  function checkforDST() {
-    
-  }
-
-  /**
-   * Run the Functions!!
-   */
-
-  // getLocationByIP();
-  // getDateObj();
-  getSunriseObj($lat_result, $long_result);
 } 
 
   /**
