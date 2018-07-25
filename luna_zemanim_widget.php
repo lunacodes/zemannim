@@ -22,10 +22,10 @@ class Luna_Zemanim_Widget extends WP_Widget {
    * Register widget with WordPress
    */
   public function __construct() {
-  parent::__construct(
-    'luna_zemanim_widget', // Base ID
-    'Luna Zemanim Widget', // Name
-    array( 'description' => __( "Luna's Zemanim Widget", 'text_domain' ),  ) //Args
+    parent::__construct(
+      'luna_zemanim_widget', // Base ID
+      __('Luna Zemanim Widget', 'luna_zemanim_widget_domain'), // Name
+      array( 'description' => __( "Displays Zemannim (times) according to Sepharadic tradition", 'luna_zemanim_widget_domain' ),  ) //Args
     ); 
 
   add_action( 'widgets_init', function() {register_widget( 'Luna_Zemanim_Widget' ); } );
@@ -37,20 +37,17 @@ class Luna_Zemanim_Widget extends WP_Widget {
    * @see WP_Widget::widget()
    * 
    * @param array $args     Widget Arguments.
-   * @param array $instance Saved values from database
-   */
+   * @param array $instance Saved values from database   */
   public function widget( $args, $instance ) {
-    extract( $args );
+    // extract( $args );
     $title = apply_filters( 'widget_title', $instance['title'] );
 
-    echo $args['$before_widget'];
+    echo $args['before_widget'];
     if ( ! empty( $title ) ) {
-      echo $args['$before_title'] . $title . $args['$after_title'];
+      echo $args['before_title'] . $title . $args['after_title'];
     }
-    echo __( 'Zemanim Widget', 'zemanim_widget_domain' );
-    ?>
+    // echo __( 'Zemanim Widget', 'luna_zemanim_widget_domain' );
 
-    <?php
     /**
      * Setup for Date, Time, Timezone, etc
      */
@@ -59,7 +56,6 @@ class Luna_Zemanim_Widget extends WP_Widget {
     $yom = strtotime("now");
     $yom_txt = date("M d, Y", $yom);
     $yom_ymd = date("Y-m-d", $yom);
-
   function getClientIP() {
     $client_ip = '';
     $client_ip = !empty($_SERVER['HTTP_X_FORWARDED_FOR']) ? $_SERVER['HTTP_X_FORWARDED_FOR'] : $_SERVER['REMOTE_ADDR'];
@@ -94,6 +90,7 @@ class Luna_Zemanim_Widget extends WP_Widget {
     $region_name = $result['region_name'];
     $city = $result['city'];
     $state = $result['region_code'];
+    $locationStr = "$city, $state";
     // echo("$lat," . " $long <br>" );
     // echo ("$ip <br>$city, $state<br>");
 
@@ -128,7 +125,8 @@ class Luna_Zemanim_Widget extends WP_Widget {
     // Convert UTC Secs to Date str
     $yomsunriseformat = date("h:i:A", $yomsunrisedatetime);
     $yomsunsetdatetime = strtotime($yomsunset);
-    $yomsunsetformat = date("h:i:A", $yomsunsetdatetime);
+    $yomsunsetformat = date("h:i", $yomsunsetdatetime);
+    $SunsetStr = "$yomsunsetformat PM";
     // Note: these are currently in UTC
     $sunrisesec = $yomsunrisedatetime+$offset;
     $sunsetsec = $yomsunsetdatetime+$offset;
@@ -194,34 +192,35 @@ class Luna_Zemanim_Widget extends WP_Widget {
     // echo("Earliest Minha: $earliestMinha<br>"); 
     // echo("Peleg HaMinha: $pelegHaMinha<br>"); 
 
-  function outputZemanim($shema, $minha, $peleg) { 
+  function outputZemanim($yom, $location, $shema, $minha, $peleg, $sunset) { 
+    echo($before_widget);
+    echo($before_title);
  ?>
     <div id="zemanim_container">
       <div id="zemanim_display">
-          <span id="zemanim_date"><?php echo($yom_ymd); ?></span>
-          <span id="zemanim_city"></span>
-          <span id="zemanim_hebrew">
-              <?php 
-              $hebcal_magic_date = '
-              <script type="text/javascript" charset="utf-8" src="//www.hebcal.com/etc/hdate-he.js"></script>';
-              echo($hebcal_magic_date); ?>
-              <br>
-          </span>
-          <span id="zemanim_shema"><?php echo("Latest Shema: $shema<br>"); ?></span>
-          <span id="zemanim_minha"><?php echo("Earliest Minha: $minha<br>"); ?></span>
-          <span id="zemanim_peleg"><?php echo("Peleg HaMinha: $peleg<br>"); ?></span>
-          <span id="zemanim_sunset"></span>
+  <span id="zemanim_date"><?php echo("Times for $yom <br>"); ?></span>
+  <span id="zemanim_city"><?php echo("$location <br>"); ?></span>
+  <span id="zemanim_hebrew">
+      <?php 
+      $hebcal_magic_date = '
+      <script type="text/javascript" charset="utf-8" src="//www.hebcal.com/etc/hdate-he.js"></script>';
+      echo($hebcal_magic_date); ?>
+      <br>
+  </span>
+  <span id="zemanim_shema"><?php echo("Latest Shema': $shema<br>"); ?></span>
+  <span id="zemanim_minha"><?php echo("Earliest Minḥa: $minha<br>"); ?></span>
+  <span id="zemanim_peleg"><?php echo("Peleḡ HaMinḥa: $peleg<br>"); ?></span>
+          <span id="zemanim_sunset"><?php echo("Sunset: $sunset"); ?></span>
       </div>
   </div>
 
 <?php 
   }
-  outputZemanim($latestShema, $earliestMinha, $pelegHaMinha);
-?>
+  outputZemanim($yom_txt, $locationStr, $latestShema, $earliestMinha, $pelegHaMinha, $SunsetStr);
 
-<?php
+    echo $args['after_widget'];
 
-} 
+} // public function widget ends here
 
   /**
    * Back-end widget form.
@@ -230,20 +229,20 @@ class Luna_Zemanim_Widget extends WP_Widget {
    * 
    * @param array $instance Previously saved values from database.
    */
-   public function form( $instance ) {
+ public function form( $instance ) {
   if ( isset( $instance[ 'title' ] ) ) {
     $title = $instance[ 'title' ];
   }
   else {
-    $title = __( 'New title', 'text_domain' );
+    $title = __( 'New title', 'luna_zemanim_widget_domain' );
   }
 
   // Widget admin form
   ?>
-  <p>
-  <label for="<?php echo $this->get_field_id( 'title' );?>"><?php _e( 'Title:' ); ?></label>
-  <input class="widefat" id="<?php echo $this-> get_field_name( 'title' );?>" type="text" value="<?php echo esc_attr( $title ); ?>"  /> 
-  </p> 
+<p>
+<label for="<?php echo $this->get_field_id( 'title' ); ?>"><?php _e( 'Title:' ); ?></label> 
+<input class="widefat" id="<?php echo $this->get_field_id( 'title' ); ?>" name="<?php echo $this->get_field_name( 'title' ); ?>" type="text" value="<?php echo esc_attr( $title ); ?>" />
+</p>
   <?php
   } 
 
