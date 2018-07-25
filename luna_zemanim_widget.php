@@ -5,14 +5,16 @@
 
 /**
  * Issues:
-   * js: I probably want to replace a lot of the var statements w/ let statements
-   * js, php: change js api calls to php cURL calls
+   * widget: before & after html formatting not appearing
+   * php: occasional uncaught Type Error - make an If Wrapper for this??
    * php: refactor into functions
    * php: I might be able to make the Time calculations easier by setting the default time zone to $tzname from the outset
    * php: Should I combine the Shema & Minha calculations into one function?
    * php: write tests
    * php: docblocks for functions
    * php: I can probably remove all of the enqueues now!!
+   * php: fix calculations for +GMT Offset locations
+   * api: fix freegoip.net error message in console
  */
 class Luna_Zemanim_Widget extends WP_Widget {
 
@@ -38,45 +40,17 @@ class Luna_Zemanim_Widget extends WP_Widget {
    * @param array $instance Saved values from database
    */
   public function widget( $args, $instance ) {
-    // wp_enqueue_script( 'jquery' ); 
-    // wp_enqueue_script( 'google-maps', 'http://maps.googleapis.com/maps/api/js?key=AIzaSyDFrCM7Ao83pwu_avw-53o7cV0Ym7eLqpc' );
-    // wp_enqueue_script( 'suncalc-master', plugins_url( '/suncalc-master/suncalc.js?ver=4.9.4', __FILE__ ) );
-
     extract( $args );
     $title = apply_filters( 'widget_title', $instance['title'] );
 
-    echo $before_widget;
+    echo $args['$before_widget'];
     if ( ! empty( $title ) ) {
-      echo $before_title . $title . $after_title;
+      echo $args['$before_title'] . $title . $args['$after_title'];
     }
-    echo __( 'Zemanim Widget', 'text_domain' );
+    echo __( 'Zemanim Widget', 'zemanim_widget_domain' );
     ?>
 
     <?php
-    function outputZemanim() { ?>
-        <div id="zemanim_container">
-            <div id="zemanim_display">
-                <span id="zemanim_date"></span>
-                <span id="zemanim_city"></span>
-                <span id="zemanim_hebrew">
-                    <?php 
-                    $hebcal_magic_date = '
-                    <script type="text/javascript" charset="utf-8" src="//www.hebcal.com/etc/hdate-he.js"></script>';
-                    echo($hebcal_magic_date); ?>
-                    <br>
-                </span>
-                <span id="zemanim_shema"></span>
-                <span id="zemanim_minha"></span>
-                <span id="zemanim_peleg"></span>
-                <span id="zemanim_sunset"></span>
-            </div>
-        </div>
-
-    <?php 
-    }
-
-    outputZemanim();
-
     /**
      * Setup for Date, Time, Timezone, etc
      */
@@ -120,8 +94,8 @@ class Luna_Zemanim_Widget extends WP_Widget {
     $region_name = $result['region_name'];
     $city = $result['city'];
     $state = $result['region_code'];
-    echo("$lat," . " $long <br>" );
-    echo ("$ip <br>$city, $state<br>");
+    // echo("$lat," . " $long <br>" );
+    // echo ("$ip <br>$city, $state<br>");
 
     $latLng = json_encode([$lat, $long]);
     
@@ -160,19 +134,20 @@ class Luna_Zemanim_Widget extends WP_Widget {
     $sunsetsec = $yomsunsetdatetime+$offset;
     $halakhicHour = ($sunsetsec - $sunrisesec) / 12;
 
-    echo("<br>Time Zone: $tzname <br>Offset: $offset <br> Offset Hrs: $offset_h <br>Sunrise: $yomsunrise  <br>Sunset: $yomsunset  <br>Sunrise DT: $yomsunrisedatetime  <br>Sunset DT: $yomsunsetdatetime <br>Sunrise Format: $yomsunriseformat <br>Sunset Format: $yomsunsetformat <br>Sunrise Sec: $sunrisesec <br> Sunset Sec: $sunsetsec <br>Halakhic Hour: $halakhicHour <br><br>");
+    // echo("<br>Time Zone: $tzname <br>Offset: $offset <br> Offset Hrs: $offset_h <br>Sunrise: $yomsunrise  <br>Sunset: $yomsunset  <br>Sunrise DT: $yomsunrisedatetime  <br>Sunset DT: $yomsunsetdatetime <br>Sunrise Format: $yomsunriseformat <br>Sunset Format: $yomsunsetformat <br>Sunrise Sec: $sunrisesec <br> Sunset Sec: $sunsetsec <br>Halakhic Hour: $halakhicHour <br><br>");
 
     date_default_timezone_set($tzname);
     function calculateLatestShema($sunriseSec, $offSetSec, $halakhicHour) {
-      echo("CLS Sunrise Sec Passed: $sunriseSec");
-      $h3 = $halakhicHour * 3;
-      echo("CLS: $sunriseSec, Offset: $offSetSec, $halakhicHour, $h3<br><br>");
+      // echo("CLS Sunrise Sec Passed: $sunriseSec");
+      // $h3 = $halakhicHour * 3;
+      // echo("CLS: $sunriseSec, Offset: $offSetSec, $halakhicHour, $h3<br><br>");
       $shemaInSeconds = $sunriseSec + ($halakhicHour * 3) + $offSetSec;
       // echo("Shema Sec: $shemaInSeconds<br>");
       // echo("Shema Sec 2: $shema2<br>");
-      $latestShema = date("h:i:A", $shemaInSeconds);
+      $latestShema = date("h:i", $shemaInSeconds);
+      $latestShemaStr = "$latestShema AM";
       // $latestShema2 = 
-      return $latestShema;
+      return $latestShemaStr;
     }
 
     function calculateEarliestMinha($sunriseSec, $offSetSec, $halakhicHour) {
@@ -183,33 +158,43 @@ class Luna_Zemanim_Widget extends WP_Widget {
       // $minha1 = $sunriseSec + ($halakhicHour * 3) + $offSetSec;
       // echo("Shema Sec: $minhaInSeconds<br>");
       // echo("Shema Sec 2: $shema2<br>");
-      $earliestMinha = date("h:i:A:e:O:Z", $minhaInSeconds);
-      return $earliestMinha;
+      $earliestMinha = date("h:i", $minhaInSeconds);
+      $earliestMinhaStr = "$earliestMinha PM";
+      return $earliestMinhaStr;
     }
 
-    function calculatePelegHaMinha($sunsetSec2, $offSetSec2, $halakhicHour2) {
-      // echo("<br>CPM Sunset Sec Passed: $sunsetSec2 <br>");
-      $h1 = $halakhicHour2 * 1.25;
-      $absOffset = abs($offSetSec2);
-      echo("CPM Sunset: $sunsetSec2, Offset: $offSetSec2, Abs Offset: $absOffset, Halakhic Hr: $halakhicHour2, H1: $h1 <br>");
-      $pelegHaMinhaInSeconds2 = $sunsetSec2 - ($halakhicHour2 * 1.25) + ($absOffset * 1.25);
-      // $shema2 = $sunriseSec + ($halakhicHour2 * 3) + $offSetSec2;
-      echo("Peleg HaMinha Sec: $pelegHaMinhaInSeconds2<br>");
+    function calculatePelegHaMinha($sunsetSec, $offSetSec, $halakhicHour) {
+      // echo("<br>CPM Sunset Sec Passed: $sunsetSec <br>");
+      $h1 = $halakhicHour * 1.25;
+      $absOffset = abs($offSetSec);
+      // echo("CPM Sunset: $sunsetSec, Offset: $offSetSec, Abs Offset: $absOffset, Halakhic Hr: $halakhicHour, H1: $h1 <br>");
+      
+      // $step1 = $sunsetSec - $h1;
+      // echo("Step 1: $step1");
+      // $step2 = $absOffset;
+      // echo("Step 2: $step2");
+      // $step3 = $step1 + $step2;
+      // echo("Step 3: $step3");
+
+      $pelegHaMinhaInSeconds = $sunsetSec + ($halakhicHour * 1.25) + ($absOffset * 1.25);
+      // $shema2 = $sunriseSec + ($halakhicHour2 * 3) + $offSetSec;
+      // echo("Peleg HaMinha Sec: $pelegHaMinhaInSeconds<br>");
       // echo("Shema Sec 2: $shema2<br>");
-      $pelegHaMinha = date("h:i:A:e:O:Z", $pelegHaMinhaInSeconds2);
+      $pelegHaMinha = date("h:i", $pelegHaMinhaInSeconds);
+      $pelegHaMinhaStr = "$pelegHaMinha PM";
       // $latestShema2 = 
-      return $pelegHaMinha;
+      return $pelegHaMinhaStr;
     }
 
     $latestShema = calculateLatestShema($sunrisesec, $offset, $halakhicHour);
-    $earliestMinha2 = calculateEarliestMinha($sunrisesec, $offset, $halakhicHour);
+    $earliestMinha = calculateEarliestMinha($sunrisesec, $offset, $halakhicHour);
     $pelegHaMinha = calculatePelegHaMinha($sunsetsec, $offset, $halakhicHour);
 
-    echo("Latest Shema: $latestShema<br>"); 
-    echo("Earliest Minha: $earliestMinha2<br>"); 
-    echo("Peleg HaMinha: $pelegHaMinha<br>"); 
+    // echo("Latest Shema: $latestShema<br>"); 
+    // echo("Earliest Minha: $earliestMinha<br>"); 
+    // echo("Peleg HaMinha: $pelegHaMinha<br>"); 
 
-  function displayZemanim() { 
+  function outputZemanim($shema, $minha, $peleg) { 
  ?>
     <div id="zemanim_container">
       <div id="zemanim_display">
@@ -222,39 +207,18 @@ class Luna_Zemanim_Widget extends WP_Widget {
               echo($hebcal_magic_date); ?>
               <br>
           </span>
-          <span id="zemanim_shema"><?php echo("Latest Shema: $latestShema<br>"); ?></span>
-          <span id="zemanim_minha"><?php echo("Earliest Minha: $earliestMinha2<br>"); ?></span>
-          <span id="zemanim_peleg"><?php echo("Peleg HaMinha: $pelegHaMinha<br>"); ?></span>
+          <span id="zemanim_shema"><?php echo("Latest Shema: $shema<br>"); ?></span>
+          <span id="zemanim_minha"><?php echo("Earliest Minha: $minha<br>"); ?></span>
+          <span id="zemanim_peleg"><?php echo("Peleg HaMinha: $peleg<br>"); ?></span>
           <span id="zemanim_sunset"></span>
       </div>
   </div>
 
 <?php 
   }
-  displayZemanim();
+  outputZemanim($latestShema, $earliestMinha, $pelegHaMinha);
 ?>
 
-<!-- <script type="text/javascript" defer>
-    var z_date = document.getElementById("zemanim_date");
-    var z_city = document.getElementById("zemanim_city");
-    var z_shema = document.getElementById("zemanim_shema");
-    var z_minha = document.getElementById("zemanim_minha");
-    var z_peleg = document.getElementById("zemanim_peleg");
-    var z_sunset = document.getElementById("zemanim_sunset");    var x = document.getElementById("zemanim_container");
-
-    // let latLong = null;
-    var zemanim = document.getElementById("zemanim_display");
-
-    <?php // echo("var pos = " . $latLng . ';') ?>
-    console.log(pos);
-
-  jQuery(document).ready( () => {
-      // var latLng = <?php // echo($latLng); ?>;
-      // getGeoDetails(latLng);
-      getLocation();
-    })
-
-</script> -->
 <?php
 
 } 
