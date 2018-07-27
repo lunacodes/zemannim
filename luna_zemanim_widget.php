@@ -71,7 +71,6 @@ public function widget( $args, $instance ) {
 function outputZemanim() { ?>
     <div id="zemanim_container">
         <div id="zemanim_display">
-            <span id="js_ip"></span>
             <span id="zemanim_date"></span>
             <span id="zemanim_city"></span>
             <span id="zemanim_hebrew">
@@ -90,7 +89,6 @@ outputZemanim();
 ?>
 
 <script type="text/javascript" defer>
-  var js_ip = document.getElementById("js_ip");
   var z_date = document.getElementById("zemanim_date");
   var z_city = document.getElementById("zemanim_city");
   var z_shema = document.getElementById("zemanim_shema");
@@ -133,7 +131,6 @@ outputZemanim();
       })
       .then(function(res) {
         let ip = res["ipAddress"];
-        js_ip.innerHTML = ip + "<br>";
         let apiKey = 'AIzaSyDFrCM7Ao83pwu_avw-53o7cV0Ym7eLqpc';
         let city = res["city"];
         let state = res["stateProv"];
