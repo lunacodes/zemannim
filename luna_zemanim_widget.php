@@ -183,132 +183,132 @@ outputZemanim();
 
       generateTimes(lat, long, cityStr);
     });
-}
-
-function checkForDST() {
-  Date.prototype.stdTimezoneOffset = function () {
-    var jan = new Date(this.getFullYear(), 0, 1);
-    var jul = new Date(this.getFullYear(), 6, 1);
-    return Math.max(jan.getTimezoneOffset(), jul.getTimezoneOffset());
   }
 
-  Date.prototype.isDstObserved = function () {
-    return this.getTimezoneOffset() < this.stdTimezoneOffset();
+  function checkForDST() {
+    Date.prototype.stdTimezoneOffset = function () {
+      var jan = new Date(this.getFullYear(), 0, 1);
+      var jul = new Date(this.getFullYear(), 6, 1);
+      return Math.max(jan.getTimezoneOffset(), jul.getTimezoneOffset());
   }
 
-  var today = new Date();
-  if (today.isDstObserved()) { 
-    return true;
+    Date.prototype.isDstObserved = function () {
+      return this.getTimezoneOffset() < this.stdTimezoneOffset();
+    }
+
+    var today = new Date();
+    if (today.isDstObserved()) { 
+      return true;
+    }
   }
-}
 
-function formatTime(x) {
-  var reformattedTime = x.toString();
-  reformattedTime = ("0" + x).slice(-2);
-  return reformattedTime;
-}
-
-function generateTimeStrings(timeObj) {
-  var year = timeObj.getFullYear();
-  var month = formatTime(timeObj.getMonth() + 1);
-  var day = formatTime(timeObj.getDate());
-  var hour = formatTime(timeObj.getHours());
-  var min = formatTime(timeObj.getMinutes());
-  var sec = formatTime(timeObj.getSeconds());
-  var buildTimeStr = year + "-" + month + "-" + day + " " + hour + ":" + min;
-  return buildTimeStr;
-}
-
-function generateDateString(timeObj) {
-  var monthInt = timeObj.getMonth();
-  var monthList = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-  var month = monthList[monthInt];
-  var day = formatTime(timeObj.getDate());
-  var year = timeObj.getFullYear();
-  var buildDateStr = '<span id="zemanin_date">' + "Times for " + month + " " + day + ", " + year + '</span>';
-  return buildDateStr;
-}
-
-function generateTimes(lat, long, city) {
-  var cityStr = city;
-  var times = SunCalc.getTimes(new Date(), lat, long);
-  var sunriseObj = times.sunrise;
-  var offSet = sunriseObj.getTimezoneOffset() / 60;
-  var offSetSec = offSet * 3600;
-  var dateObj = new Date();
-  var dateStr = generateDateString(dateObj);
-  var sunriseStr = generateTimeStrings(sunriseObj);
-  var sunsetObj = times.sunset;
-  var sunsetStr = generateTimeStrings(sunsetObj);
-
-  var SunriseDateTimeInt = parseFloat((new Date(sunriseStr).getTime() / 1000) - offSetSec);
-  var SunsetDateTimeInt = parseFloat((new Date(sunsetStr).getTime() / 1000) - offSetSec);
-  var sunriseSec = SunriseDateTimeInt - offSet;
-  var sunsetSec = SunsetDateTimeInt - offSet;
-
-  var latestShemaStr = '<span id="zmantitle">Latest Shema: </span>' + calculateLatestShema(sunriseSec, sunsetSec, offSetSec);
-  var earliestMinhaStr = '<span id="zmantitle">Earliest Minḥa: </span>' + calculateEarliestMinha(sunriseSec, sunsetSec, offSetSec);
-  var pelegHaMinhaStr = '<span id="zmantitle">Peleḡ HaMinḥa: </span>' + calculatePelegHaMinha(sunriseSec, sunsetSec, offSetSec);
-  var displaySunsetStr = '<span id="zmantitle">Sunset: </span>' + unixTimestampToDate(SunsetDateTimeInt+offSetSec);
-
-  displayTimes(dateStr, cityStr, latestShemaStr, earliestMinhaStr, pelegHaMinhaStr, displaySunsetStr);
-}
-
-function unixTimestampToDate(timestamp) {
-  var date = new Date(timestamp * 1000);
-  var hours = date.getHours();
-  var ampm = "AM";
-  var minutes = "0" + date.getMinutes();
-
-  if (hours > 12) {
-    hours -= 12;
-    ampm = "PM";
+  function formatTime(x) {
+    var reformattedTime = x.toString();
+    reformattedTime = ("0" + x).slice(-2);
+    return reformattedTime;
   }
-  else if (hours === 0) {
-    hours = 12;
+
+  function generateTimeStrings(timeObj) {
+    var year = timeObj.getFullYear();
+    var month = formatTime(timeObj.getMonth() + 1);
+    var day = formatTime(timeObj.getDate());
+    var hour = formatTime(timeObj.getHours());
+    var min = formatTime(timeObj.getMinutes());
+    var sec = formatTime(timeObj.getSeconds());
+    var buildTimeStr = year + "-" + month + "-" + day + " " + hour + ":" + min;
+    return buildTimeStr;
   }
-  var formattedTime = hours + ':' + minutes.substr(-2);
-  return formattedTime + " " + ampm;
-}
 
-function calculateLatestShema(sunriseSec, sunsetSec, offSetSec) {
-  var halakhicHour = Math.abs((sunsetSec - sunriseSec) / 12);
-  var shemaInSeconds = sunriseSec + (halakhicHour * 3) + offSetSec;
-  var latestShema = unixTimestampToDate(shemaInSeconds);
+  function generateDateString(timeObj) {
+    var monthInt = timeObj.getMonth();
+    var monthList = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    var month = monthList[monthInt];
+    var day = formatTime(timeObj.getDate());
+    var year = timeObj.getFullYear();
+    var buildDateStr = '<span id="zemanin_date">' + "Times for " + month + " " + day + ", " + year + '</span>';
+    return buildDateStr;
+  }
 
-  return latestShema;
-}
+  function generateTimes(lat, long, city) {
+    var cityStr = city;
+    var times = SunCalc.getTimes(new Date(), lat, long);
+    var sunriseObj = times.sunrise;
+    var offSet = sunriseObj.getTimezoneOffset() / 60;
+    var offSetSec = offSet * 3600;
+    var dateObj = new Date();
+    var dateStr = generateDateString(dateObj);
+    var sunriseStr = generateTimeStrings(sunriseObj);
+    var sunsetObj = times.sunset;
+    var sunsetStr = generateTimeStrings(sunsetObj);
 
-function calculateEarliestMinha(sunriseSec, sunsetSec, offSetSec) {
-  var halakhicHour = (sunsetSec - sunriseSec) / 12;
-  var minhaInSeconds = sunriseSec + (halakhicHour * 6.5) + offSetSec;
-  var earliestMinha = unixTimestampToDate(minhaInSeconds);
+    var SunriseDateTimeInt = parseFloat((new Date(sunriseStr).getTime() / 1000) - offSetSec);
+    var SunsetDateTimeInt = parseFloat((new Date(sunsetStr).getTime() / 1000) - offSetSec);
+    var sunriseSec = SunriseDateTimeInt - offSet;
+    var sunsetSec = SunsetDateTimeInt - offSet;
 
-  return earliestMinha;
-}
+    var latestShemaStr = '<span id="zmantitle">Latest Shema: </span>' + calculateLatestShema(sunriseSec, sunsetSec, offSetSec);
+    var earliestMinhaStr = '<span id="zmantitle">Earliest Minḥa: </span>' + calculateEarliestMinha(sunriseSec, sunsetSec, offSetSec);
+    var pelegHaMinhaStr = '<span id="zmantitle">Peleḡ HaMinḥa: </span>' + calculatePelegHaMinha(sunriseSec, sunsetSec, offSetSec);
+    var displaySunsetStr = '<span id="zmantitle">Sunset: </span>' + unixTimestampToDate(SunsetDateTimeInt+offSetSec);
 
-function calculatePelegHaMinha(sunriseSec, sunsetSec, offSetSec) {
-  var halakhicHour = (sunsetSec - sunriseSec) / 12;
-  var minhaInSeconds = sunsetSec - (halakhicHour * 1.25) + offSetSec;
-  var pelegHaMinha = unixTimestampToDate(minhaInSeconds);
+    displayTimes(dateStr, cityStr, latestShemaStr, earliestMinhaStr, pelegHaMinhaStr, displaySunsetStr);
+  }
 
-  return pelegHaMinha;
-}
+  function unixTimestampToDate(timestamp) {
+    var date = new Date(timestamp * 1000);
+    var hours = date.getHours();
+    var ampm = "AM";
+    var minutes = "0" + date.getMinutes();
 
-function displayTimes(date, city, shema, minha, peleg, sunset) {
+    if (hours > 12) {
+      hours -= 12;
+      ampm = "PM";
+    }
+    else if (hours === 0) {
+      hours = 12;
+    }
+    var formattedTime = hours + ':' + minutes.substr(-2);
+    return formattedTime + " " + ampm;
+  }
 
-  z_date.innerHTML = date + "<br>";
-  z_city.innerHTML = city + "<br>";
-  z_shema.innerHTML = shema + "<br>";
-  z_minha.innerHTML = minha + "<br>";
-  z_peleg.innerHTML = peleg + "<br>";
-  z_sunset.innerHTML = sunset + "<br>";
-}
+  function calculateLatestShema(sunriseSec, sunsetSec, offSetSec) {
+    var halakhicHour = Math.abs((sunsetSec - sunriseSec) / 12);
+    var shemaInSeconds = sunriseSec + (halakhicHour * 3) + offSetSec;
+    var latestShema = unixTimestampToDate(shemaInSeconds);
 
-// Make sure we're ready to run our script!
-jQuery(document).ready(function($) {
-  getLocation();
-});
+    return latestShema;
+  }
+
+  function calculateEarliestMinha(sunriseSec, sunsetSec, offSetSec) {
+    var halakhicHour = (sunsetSec - sunriseSec) / 12;
+    var minhaInSeconds = sunriseSec + (halakhicHour * 6.5) + offSetSec;
+    var earliestMinha = unixTimestampToDate(minhaInSeconds);
+
+    return earliestMinha;
+  }
+
+  function calculatePelegHaMinha(sunriseSec, sunsetSec, offSetSec) {
+    var halakhicHour = (sunsetSec - sunriseSec) / 12;
+    var minhaInSeconds = sunsetSec - (halakhicHour * 1.25) + offSetSec;
+    var pelegHaMinha = unixTimestampToDate(minhaInSeconds);
+
+    return pelegHaMinha;
+  }
+
+  function displayTimes(date, city, shema, minha, peleg, sunset) {
+
+    z_date.innerHTML = date + "<br>";
+    z_city.innerHTML = city + "<br>";
+    z_shema.innerHTML = shema + "<br>";
+    z_minha.innerHTML = minha + "<br>";
+    z_peleg.innerHTML = peleg + "<br>";
+    z_sunset.innerHTML = sunset + "<br>";
+  }
+
+  // Make sure we're ready to run our script!
+  jQuery(document).ready(function($) {
+    getLocation();
+  });
 
 </script>
 
