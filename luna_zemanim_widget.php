@@ -1,266 +1,461 @@
 <?php
 /**
- * Plugin Name: Luna Zemanim Widget
- */
+* Plugin Name: Daily Zemanim
+ * Plugin URI: https://lunacodesdesign.com/
+ * Description: Displays Zemannim (times) according to Sepharadic tradition. 
+ *   Uses the DB-IP API and the Google Maps API for geographic information. 
+ *   Uses the Sun-Calc Library (https://github.com/mourner/suncalc) for sunrise/sunset information.
+ * Version: 1.1
+ * Author: Luna Lunapiena
+ * Author URI: https://lunacodesdesign.com/
+ * License: GPL3+
+ * License URI: https://www.gnu.org/licenses/gpl-3.0.html 
+ * Text Domain: luna_zemanim_widget_domain
+ * Change Record:
+ * ***********************************
+ * 2018- - initial creation
+ *
+ * 
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation,version 3
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   For details about the GNU General Public License, see <http://www.gnu.org/licenses/>.
+ *   For details about this program, see the readme file.
+*/
 
 /**
  * Issues:
-   * widget: before & after html formatting not appearing
-   * php: occasional uncaught Type Error - make an If Wrapper for this??
-   * php: refactor into functions
-   * php: I might be able to make the Time calculations easier by setting the default time zone to $tzname from the outset
-   * php: Should I combine the Shema & Minha calculations into one function?
-   * php: write tests
-   * php: docblocks for functions
-   * php: I can probably remove all of the enqueues now!!
-   * php: fix calculations for +GMT Offset locations
-   * api: fix freegoip.net error message in console
- */
+ * ***********************************
+ * getGeoDetails: var state needs for loop, instead of just being set to null
+ * improve code logic with promises?
+*/
+
 class Luna_Zemanim_Widget extends WP_Widget {
 
-  /**
-   * Register widget with WordPress
-   */
-  public function __construct() {
-    parent::__construct(
-      'luna_zemanim_widget', // Base ID
-      __('Luna Zemanim Widget', 'luna_zemanim_widget_domain'), // Name
-      array( 'description' => __( "Displays Zemannim (times) according to Sepharadic tradition", 'luna_zemanim_widget_domain' ),  ) //Args
-    ); 
+/**
+ * Register widget with WordPress
+ */
+public function __construct() {
+  parent::__construct(
+    'luna_zemanim_widget', // Base ID
+    __('Daily Zemannim', 'luna_zemanim_widget_domain'), // Name
+    array( 'description' => __( "Displays Zemannim (times) according to Sepharadic tradition", 'luna_zemanim_widget_domain' ),  ) //Args
+  ); 
 
-  add_action( 'widgets_init', function() {register_widget( 'Luna_Zemanim_Widget' ); } );
+add_action( 'widgets_init', function() {register_widget( 'Luna_Zemanim_Widget' ); } );
+}
+
+/**
+ * Front-end display of widget.
+ * 
+ * @see WP_Widget::widget()
+ * 
+ * @param array $args     Widget Arguments.
+ * @param array $instance Saved values from database   */
+public function widget( $args, $instance ) {
+  wp_enqueue_script( 'suncalc-master', plugins_url( '/suncalc-master/suncalc.js?ver=4.9.4', __FILE__ ) );
+
+  // extract( $args );
+  $title = apply_filters( 'widget_title', $instance['title'] );
+
+  echo $args['before_widget'];
+  if ( ! empty( $title ) ) {
+    echo $args['before_title'] . $title . $args['after_title'];
   }
+  // echo __( 'Zemanim Widget', 'luna_zemanim_widget_domain' );
 
-  /**
-   * Front-end display of widget.
-   * 
-   * @see WP_Widget::widget()
-   * 
-   * @param array $args     Widget Arguments.
-   * @param array $instance Saved values from database   */
-  public function widget( $args, $instance ) {
-    // extract( $args );
-    $title = apply_filters( 'widget_title', $instance['title'] );
-
-    echo $args['before_widget'];
-    if ( ! empty( $title ) ) {
-      echo $args['before_title'] . $title . $args['after_title'];
-    }
-    // echo __( 'Zemanim Widget', 'luna_zemanim_widget_domain' );
-
-    /**
-     * Setup for Date, Time, Timezone, etc
-     */
-    
-    /* What day is it today*/
-    $yom = strtotime("now");
-    $yom_txt = date("M d, Y", $yom);
-    $yom_ymd = date("Y-m-d", $yom);
-  function getClientIP() {
-    $client_ip = '';
-    $client_ip = !empty($_SERVER['HTTP_X_FORWARDED_FOR']) ? $_SERVER['HTTP_X_FORWARDED_FOR'] : $_SERVER['REMOTE_ADDR'];
-    // echo('<br>');
-    // echo("ip: $client_ip <br>");
-    // $ip = '134.201.250.155';
-    return $client_ip;
-  }
-
-  // function getLatLngByIP() {
-    $ip = getClientIP();
-
-    $access_key = '62e3a66a273f35e0bde207e433850072';
-
-    // Initialize CURL:
-    $ch = curl_init('http://api.ipstack.com/'.$ip.'?access_key='.$access_key.'');
-    // echo("ch: $ch");
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-
-    // Store the data:
-    $json = curl_exec($ch);
-    // echo("ch json: $json");
-    curl_close($ch);
-
-    // Decode JSON response:
-    $result = json_decode($json, true);
-    // var_dump($result);
-    $lat =$result['latitude'];
-    $long = $result['longitude'];
-    $ip = $result['ip'];
-    $continent_name = $result['continent_name'];
-    $region_name = $result['region_name'];
-    $city = $result['city'];
-    $state = $result['region_code'];
-    $locationStr = "$city, $state";
-    // echo("$lat," . " $long <br>" );
-    // echo ("$ip <br>$city, $state<br>");
-
-    $latLng = json_encode([$lat, $long]);
-    
-    /* Get time offset for timzezone and DST */
-    $tzurl = "http://api.geonames.org/timezoneJSON?lat=".$lat."&lng=".$long."&date=".$yom_ymd."&username=adatosystems";
-    // luna debug check url
-    // echo("tzurl: $tzurl");
-    $ch = curl_init();
-      curl_setopt($ch, CURLOPT_URL, $tzurl);
-        curl_setopt($ch, CURLOPT_HEADER, false);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        $tz = curl_exec($ch);
-      curl_close($ch);
-    $tzjd = json_decode(utf8_encode($tz),true);
-    // echo "tzjd: $tzjd";
-    // var_dump($tzjd);
-    $tzname = $tzjd['timezoneId'];
-    
-    // Get the Time Zone Offset
-    date_default_timezone_set('UTC');
-    $utc = new DateTime();
-    $current = timezone_open($tzname);
-    $offset = timezone_offset_get($current, $utc); // seconds
-    $offset_h = $offset / 3600;
-
-    $yomsunrise = $tzjd['dates'][0]['sunrise'];
-    $yomsunset = $tzjd['dates'][0]['sunset'];
-    // Convert string to UTC Seconds
-    $yomsunrisedatetime = strtotime($yomsunrise);
-    // Convert UTC Secs to Date str
-    $yomsunriseformat = date("h:i:A", $yomsunrisedatetime);
-    $yomsunsetdatetime = strtotime($yomsunset);
-    $yomsunsetformat = date("h:i", $yomsunsetdatetime);
-    $SunsetStr = "$yomsunsetformat PM";
-    // Note: these are currently in UTC
-    $sunrisesec = $yomsunrisedatetime+$offset;
-    $sunsetsec = $yomsunsetdatetime+$offset;
-    $halakhicHour = ($sunsetsec - $sunrisesec) / 12;
-
-    // echo("<br>Time Zone: $tzname <br>Offset: $offset <br> Offset Hrs: $offset_h <br>Sunrise: $yomsunrise  <br>Sunset: $yomsunset  <br>Sunrise DT: $yomsunrisedatetime  <br>Sunset DT: $yomsunsetdatetime <br>Sunrise Format: $yomsunriseformat <br>Sunset Format: $yomsunsetformat <br>Sunrise Sec: $sunrisesec <br> Sunset Sec: $sunsetsec <br>Halakhic Hour: $halakhicHour <br><br>");
-
-    date_default_timezone_set($tzname);
-    function calculateLatestShema($sunriseSec, $offSetSec, $halakhicHour) {
-      // echo("CLS Sunrise Sec Passed: $sunriseSec");
-      // $h3 = $halakhicHour * 3;
-      // echo("CLS: $sunriseSec, Offset: $offSetSec, $halakhicHour, $h3<br><br>");
-      $shemaInSeconds = $sunriseSec + ($halakhicHour * 3) + $offSetSec;
-      // echo("Shema Sec: $shemaInSeconds<br>");
-      // echo("Shema Sec 2: $shema2<br>");
-      $latestShema = date("h:i", $shemaInSeconds);
-      $latestShemaStr = "$latestShema AM";
-      // $latestShema2 = 
-      return $latestShemaStr;
-    }
-
-    function calculateEarliestMinha($sunriseSec, $offSetSec, $halakhicHour) {
-      // echo("CEM Sunrise Sec Passed: $sunriseSec");
-      // $h3 = $halakhicHour * 3;
-      // echo("PHP values: $sunriseSec, $sunsetSec, $halakhicHour, $h3");
-      $minhaInSeconds = $sunriseSec + ($halakhicHour * 6.5) + $offSetSec;
-      // $minha1 = $sunriseSec + ($halakhicHour * 3) + $offSetSec;
-      // echo("Shema Sec: $minhaInSeconds<br>");
-      // echo("Shema Sec 2: $shema2<br>");
-      $earliestMinha = date("h:i", $minhaInSeconds);
-      $earliestMinhaStr = "$earliestMinha PM";
-      return $earliestMinhaStr;
-    }
-
-    function calculatePelegHaMinha($sunsetSec, $offSetSec, $halakhicHour) {
-      // echo("<br>CPM Sunset Sec Passed: $sunsetSec <br>");
-      $h1 = $halakhicHour * 1.25;
-      $absOffset = abs($offSetSec);
-      // echo("CPM Sunset: $sunsetSec, Offset: $offSetSec, Abs Offset: $absOffset, Halakhic Hr: $halakhicHour, H1: $h1 <br>");
-      
-      // $step1 = $sunsetSec - $h1;
-      // echo("Step 1: $step1");
-      // $step2 = $absOffset;
-      // echo("Step 2: $step2");
-      // $step3 = $step1 + $step2;
-      // echo("Step 3: $step3");
-
-      $pelegHaMinhaInSeconds = $sunsetSec + ($halakhicHour * 1.25) + ($absOffset * 1.25);
-      // $shema2 = $sunriseSec + ($halakhicHour2 * 3) + $offSetSec;
-      // echo("Peleg HaMinha Sec: $pelegHaMinhaInSeconds<br>");
-      // echo("Shema Sec 2: $shema2<br>");
-      $pelegHaMinha = date("h:i", $pelegHaMinhaInSeconds);
-      $pelegHaMinhaStr = "$pelegHaMinha PM";
-      // $latestShema2 = 
-      return $pelegHaMinhaStr;
-    }
-
-    $latestShema = calculateLatestShema($sunrisesec, $offset, $halakhicHour);
-    $earliestMinha = calculateEarliestMinha($sunrisesec, $offset, $halakhicHour);
-    $pelegHaMinha = calculatePelegHaMinha($sunsetsec, $offset, $halakhicHour);
-
-    // echo("Latest Shema: $latestShema<br>"); 
-    // echo("Earliest Minha: $earliestMinha<br>"); 
-    // echo("Peleg HaMinha: $pelegHaMinha<br>"); 
-
-  function outputZemanim($yom, $location, $shema, $minha, $peleg, $sunset) { 
-    echo($before_widget);
-    echo($before_title);
- ?>
+function outputZemanim() { ?>
     <div id="zemanim_container">
-      <div id="zemanim_display">
-  <span id="zemanim_date"><?php echo("Times for $yom <br>"); ?></span>
-  <span id="zemanim_city"><?php echo("$location <br>"); ?></span>
-  <span id="zemanim_hebrew">
-      <?php 
-      $hebcal_magic_date = '
-      <script type="text/javascript" charset="utf-8" src="//www.hebcal.com/etc/hdate-he.js"></script>';
-      echo($hebcal_magic_date); ?>
-      <br>
-  </span>
-  <span id="zemanim_shema"><?php echo("Latest Shema': $shema<br>"); ?></span>
-  <span id="zemanim_minha"><?php echo("Earliest Minḥa: $minha<br>"); ?></span>
-  <span id="zemanim_peleg"><?php echo("Peleḡ HaMinḥa: $peleg<br>"); ?></span>
-          <span id="zemanim_sunset"><?php echo("Sunset: $sunset"); ?></span>
-      </div>
-  </div>
+        <div id="zemanim_display">
+            <span id="js_ip"></span>
+            <span id="zemanim_date"></span>
+            <span id="zemanim_city"></span>
+            <span id="zemanim_hebrew">
+              <script type="text/javascript" charset="utf-8" src="//www.hebcal.com/etc/hdate-he.js"></script><br>
+            </span>
+            <span id="zemanim_shema"></span>
+            <span id="zemanim_minha"></span>
+            <span id="zemanim_peleg"></span>
+            <span id="zemanim_sunset"></span>
+        </div>
+    </div>
 
-<?php 
+<?php
+}
+outputZemanim();
+
+  /**
+   * Javascript Test
+   */
+
+?>
+<script type="text/javascript" defer>
+  var js_ip = document.getElementById("js_ip");
+  var z_date = document.getElementById("zemanim_date");
+  var z_city = document.getElementById("zemanim_city");
+  var z_shema = document.getElementById("zemanim_shema");
+  var z_minha = document.getElementById("zemanim_minha");
+  var z_peleg = document.getElementById("zemanim_peleg");
+  var z_sunset = document.getElementById("zemanim_sunset");    
+  var zemanim = document.getElementById("zemanim_container");
+
+  // Snippet for getting user's IP - don't actually need for this
+  // jQuery.getJSON("https://api.ipify.org?format=json", function (data) {
+      // jQuery("#info").html("JS IP: " + data.ip);
+  // });
+
+  function getLocation()
+    {
+      var options = {
+        enableHighAccuracy: true,
+        // timeout: 5000,
+        maximumAge: 0
+      };
+
+      function error(err) {
+        console.warn(`ERROR(${err.code}): ${err.message}`);
+      zemanim.innerHtml = "Please enable location services to display the most up-to-date Zemanim";
+        console.log("going by ip instead!");
+            getAddrDetailsByIp();
+      }
+
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(getLatLngByGeo, error, options);
+      }
+
+    }
+
+  function getLatLngByGeo(position) {
+    console.log("navigator.geolocation is geolocating");
+    var pos = position;
+    var lat = pos.coords.latitude;
+    var long = pos.coords.longitude;
+
+    getGeoDetails(lat, long);
   }
-  outputZemanim($yom_txt, $locationStr, $latestShema, $earliestMinha, $pelegHaMinha, $SunsetStr);
 
-    echo $args['after_widget'];
+  function getAddrDetailsByIp() {
+    let urlStr = 'https://api.db-ip.com/v2/free/self';
+    console.log("DB-IP Url: " + urlStr);
+    fetch(urlStr)
+      .then(function(response) {
+        return response.json();
+      })
+      .then(function(res) {
+        console.log(res);
+        let ip = res["ipAddress"];
+        console.log("JS IP: " + ip);
+        js_ip.innerHTML = ip + "<br>";
+        let apiKey = 'AIzaSyDFrCM7Ao83pwu_avw-53o7cV0Ym7eLqpc';
+        let city = res["city"];
+        let state = res["stateProv"];
+        let country = res["countryCode"];
+        let address = city + "+" + state + "+" + "&components=" + country;
+        let urlBase = 'https://maps.googleapis.com/maps/api/geocode/json?';
+        let url = urlBase + "&address=" + address + "&components=" + country + "&key=" + apiKey;
+        // use regEx to replace all spaces with plus signs
+        let urlStr = url.replace(/\s+/g, "+");
+        console.log("Google Maps URL: " + urlStr);
+        getLatLongByAddr(urlStr);
+      });
+      // .then(function(city, state, country) {
+        // body...
+      // })
+  }
+
+  function getLatLongByAddr(urlStr) {
+    let url = urlStr;
+    console.log("Check - Google Maps URL: " + url);
+    fetch(url)
+      .then((response) => {
+        return response.json();
+      })
+      .then((res) => {
+        console.log(res);
+        let data = new Array(res.results[0]);
+        let lat = data[0].geometry.location.lat;
+        let long = data[0].geometry.location.lng;
+        console.log("First Lat Long ChecK: " + lat, long);
+        getGeoDetails(lat, long);
+      });
+  }
+
+  // function getLatLngByIP(position) {
+  //   var pos = position;
+
+  //   console.log("pos test: ", pos[0], pos[1]);
+  //   // console.log(JSON.stringify(pos));
+  //   // console.log(pos.toString());
+  //   var lat = parseFloat(pos[0]);
+  //   var long = parseFloat(pos[1]);
+  //   console.log(lat, long);
+  //   // getGeoDetails(lat, long);
+  // }
+
+  function getGeoDetails(lat_crd, long_crd) {
+    let lat = lat_crd;
+    let long = long_crd;
+    console.log("getGeoDetails Lat Long Check: ", lat, long);
+    var point = new google.maps.LatLng(lat, long);        new google.maps.Geocoder().geocode({'latLng': point}, function (res, status) {
+
+      // var response = res;
+      console.log(res);
+      // console.log(response);
+
+      if (res[0]) {
+        for (var i = 0; i < res.length; i++) {
+          if (res[i].types[0] === "locality") {
+            var city = res[i].address_components[0].short_name;
+          } // end if loop 2
+
+          // if (res[i].types[0] === "neighborhood") {
+          //   var neighborhood = res[i].address_components[0].long_name;
+          // } // end if loop 2
+
+          if (res[i].types[0] === "administrative_area_level_1") {
+            var state = res[i].address_components[0].long_name;
+            // var state = "";
+          } // end if loop 2
+        } // end for loop
+      } // end if loop 1
+      console.log("CNS: ", city, state);
+      console.log(res);
+
+      if (state == null) {
+        var cityStr = city;
+        console.log("cityStr null")
+      } else {
+        var cityStr =  city + ", " + state;
+        console.log("cityStr works fine");
+      }
+      console.log(cityStr);
+
+      generateTimes(lat, long, cityStr);
+      // return latLong = [window.lat, window.long];
+    });
+}
+
+function checkForDST() {
+  Date.prototype.stdTimezoneOffset = function () {
+    var jan = new Date(this.getFullYear(), 0, 1);
+    var jul = new Date(this.getFullYear(), 6, 1);
+    return Math.max(jan.getTimezoneOffset(), jul.getTimezoneOffset());
+  }
+
+  Date.prototype.isDstObserved = function () {
+    return this.getTimezoneOffset() < this.stdTimezoneOffset();
+  }
+
+  var today = new Date();
+  if (today.isDstObserved()) { 
+    console.log("Daylight saving time!");
+    return true;
+  }
+}
+
+function formatTime(x) {
+  var reformattedTime = x.toString();
+  reformattedTime = ("0" + x).slice(-2);
+  return reformattedTime;
+}
+
+function generateTimeStrings(timeObj) {
+  var year = timeObj.getFullYear();
+  var month = formatTime(timeObj.getMonth() + 1);
+  var day = formatTime(timeObj.getDate());
+  var hour = formatTime(timeObj.getHours());
+  var min = formatTime(timeObj.getMinutes());
+  var sec = formatTime(timeObj.getSeconds());
+  console.log(year, month, day, hour, min, sec);
+  var buildTimeStr = year + "-" + month + "-" + day + " " + hour + ":" + min;
+  return buildTimeStr;
+}
+
+function generateDateString(timeObj) {
+  var monthInt = timeObj.getMonth();
+  var monthList = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  var month = monthList[monthInt];
+  var day = formatTime(timeObj.getDate());
+  var year = timeObj.getFullYear();
+  var buildDateStr = '<span id="zemanin_date">' + "Times for " + month + " " + day + ", " + year + '</span>';
+  return buildDateStr;
+}
+
+function generateTimes(lat, long, city) {
+  console.log("gt Lat Long: ", lat, long);
+  console.log("get City: ", city);
+  var cityStr = city;
+  var times = SunCalc.getTimes(new Date(), lat, long);
+  var sunriseObj = times.sunrise;
+  var offSet = sunriseObj.getTimezoneOffset() / 60;
+  var offSetSec = offSet * 3600;
+  console.log("Offset: ", offSet);
+  console.log("offSetSec: ", offSetSec);
+  var dateObj = new Date();
+  var dateStr = generateDateString(dateObj);
+  var sunriseStr = generateTimeStrings(sunriseObj);
+  var sunsetObj = times.sunset;
+  var sunsetStr = generateTimeStrings(sunsetObj);
+  console.log("Times: ", times);
+  console.log("dateStr", dateStr);
+  console.log("Sunrise: ", sunriseStr);
+  console.log("Sunset: ", sunsetStr);
+
+  // console.log("/// Begin DateTime Debug: ///");
+  var SunriseDateTimeInt = parseFloat((new Date(sunriseStr).getTime() / 1000) - offSetSec);
+  var SunsetDateTimeInt = parseFloat((new Date(sunsetStr).getTime() / 1000) - offSetSec);
+  var sunriseSec = SunriseDateTimeInt - offSet;
+  var sunsetSec = SunsetDateTimeInt - offSet;
+
+  var latestShemaStr = '<span id="zmantitle">Latest Shema: </span>' + calculateLatestShema(sunriseSec, sunsetSec, offSetSec);
+  var earliestMinhaStr = '<span id="zmantitle">Earliest Minḥa: </span>' + calculateEarliestMinha(sunriseSec, sunsetSec, offSetSec);
+  var pelegHaMinhaStr = '<span id="zmantitle">Peleḡ HaMinḥa: </span>' + calculatePelegHaMinha(sunriseSec, sunsetSec, offSetSec);
+  var displaySunsetStr = '<span id="zmantitle">Sunset: </span>' + unixTimestampToDate(SunsetDateTimeInt+offSetSec);
+  // console.log("Sunset: ", displaySunset);
+
+  displayTimes(dateStr, cityStr, latestShemaStr, earliestMinhaStr, pelegHaMinhaStr, displaySunsetStr);
+  // zemanim.innerHTML = "This Worked";
+
+
+  // Display Sunset
+}
+
+// console.log("/// End TimeSec Debug ///");
+function unixTimestampToDate(timestamp) {
+  var date = new Date(timestamp * 1000);
+  var hours = date.getHours();
+  var ampm = "AM";
+  var minutes = "0" + date.getMinutes();
+
+  if (hours > 12) {
+    hours -= 12;
+    ampm = "PM";
+  }
+  else if (hours === 0) {
+    hours = 12;
+  }
+  // console.log("Date: ", date, "Hours: ", hours, "Minute: ", minutes, ampm);
+  var formattedTime = hours + ':' + minutes.substr(-2);
+  // console.log("formattedTime: ", formattedTime);
+  return formattedTime + " " + ampm;
+}
+
+// Calculate Shema
+function calculateLatestShema(sunriseSec, sunsetSec, offSetSec) {
+  var halakhicHour = Math.abs((sunsetSec - sunriseSec) / 12);
+  var shemaInSeconds = sunriseSec + (halakhicHour * 3) + offSetSec;
+  var latestShema = unixTimestampToDate(shemaInSeconds);
+
+  // console.log("Latest Shema: ", latestShema);
+  return latestShema;
+}
+
+function calculateEarliestMinha(sunriseSec, sunsetSec, offSetSec) {
+  var halakhicHour = (sunsetSec - sunriseSec) / 12;
+  var minhaInSeconds = sunriseSec + (halakhicHour * 6.5) + offSetSec;
+  var earliestMinha = unixTimestampToDate(minhaInSeconds);
+  console.log("Halakhic Hour: ", halakhicHour);
+
+  console.log("Earliest Minḥa: ", earliestMinha);
+  return earliestMinha;
+}
+
+function calculatePelegHaMinha(sunriseSec, sunsetSec, offSetSec) {
+  var halakhicHour = (sunsetSec - sunriseSec) / 12;
+  var minhaInSeconds = sunsetSec - (halakhicHour * 1.25) + offSetSec;
+  var pelegHaMinha = unixTimestampToDate(minhaInSeconds);
+
+  // console.log("Peleḡ HaMinḥa: ", pelegHaMinha);
+  return pelegHaMinha;
+}
+
+function displayTimes(date, city, shema, minha, peleg, sunset) {
+
+  z_date.innerHTML = date + "<br>";
+  z_city.innerHTML = city + "<br>";
+  // z_hebrew.innerHTML = hebrew + "<br>";
+  z_shema.innerHTML = shema + "<br>";
+  z_minha.innerHTML = minha + "<br>";
+  z_peleg.innerHTML = peleg + "<br>";
+  z_sunset.innerHTML = sunset + "<br>";
+  // zemanim.innerHTML = date + "<br>" + city + "<br"> + hebcalDate +  "<br>" + shema + "<br>" + minha + "<br>" + peleg + "<br>" + sunset;
+}
+
+
+// We'll call this once the DOM is fully loaded
+// var callback = function(){
+//   getGeoDetails(40.7449, -73.9782);
+//   // Handler when the DOM is fully loaded
+// };
+
+// Make sure we're ready to run our script!
+jQuery(document).ready(function($) {
+  getLocation();
+});
+
+// if (
+//     document.readyState === "complete" ||
+//     (document.readyState !== "loading" && !document.documentElement.doScroll)
+// ) {
+//   callback();
+// } else {
+//   document.addEventListener("DOMContentLoaded", callback);
+// }
+
+
+</script>
+
+<?php
+
+  echo $args['after_widget'];
 
 } // public function widget ends here
 
-  /**
-   * Back-end widget form.
-   * 
-   * @see WP_Widget::form()
-   * 
-   * @param array $instance Previously saved values from database.
-   */
- public function form( $instance ) {
-  if ( isset( $instance[ 'title' ] ) ) {
-    $title = $instance[ 'title' ];
-  }
-  else {
-    $title = __( 'New title', 'luna_zemanim_widget_domain' );
-  }
+/**
+ * Back-end widget form.
+ * 
+ * @see WP_Widget::form()
+ * 
+ * @param array $instance Previously saved values from database.
+ */
+public function form( $instance ) {
+if ( isset( $instance[ 'title' ] ) ) {
+  $title = $instance[ 'title' ];
+}
+else {
+  $title = __( 'New title', 'luna_zemanim_widget_domain' );
+}
 
-  // Widget admin form
-  ?>
+// Widget admin form
+?>
 <p>
 <label for="<?php echo $this->get_field_id( 'title' ); ?>"><?php _e( 'Title:' ); ?></label> 
 <input class="widefat" id="<?php echo $this->get_field_id( 'title' ); ?>" name="<?php echo $this->get_field_name( 'title' ); ?>" type="text" value="<?php echo esc_attr( $title ); ?>" />
 </p>
-  <?php
-  } 
+<?php
+} 
 
-  /**
-   * Sanitize widget form values as they are saved.
-   * 
-   * @see WP_Widget::update()
-   * 
-   * @param array $new instance Values just sent to be saved from database.
-   * 
-   * @return array Updated safe values to be saved.
-   */
-  public function update( $new_instance, $old_instance ) {
-  $instance = array();
-  $instance['title'] = ( !empty( $new_instance['title'] ) ) ? strip_tags( $new_instance['title'] ) : '';
+/**
+ * Sanitize widget form values as they are saved.
+ * 
+ * @see WP_Widget::update()
+ * 
+ * @param array $new instance Values just sent to be saved from database.
+ * 
+ * @return array Updated safe values to be saved.
+ */
+public function update( $new_instance, $old_instance ) {
+$instance = array();
+$instance['title'] = ( !empty( $new_instance['title'] ) ) ? strip_tags( $new_instance['title'] ) : '';
 
-  return $instance;
-  }  
+return $instance;
+}  
 
 } // class Luna_Zemanim_Widget
 
