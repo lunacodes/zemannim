@@ -170,7 +170,7 @@ outputZemanim();
           } // end if loop 2
 
           if (res[i].types[0] === "administrative_area_level_1") {
-            var state = res[i].address_components[0].long_name;
+            var state = res[i].address_components[0].short_name;
           } // end if loop 2
         } // end for loop
       } // end if loop 1
