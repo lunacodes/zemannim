@@ -32,59 +32,61 @@
 /**
  * Issues:
  * ***********************************
- * getGeoDetails: var state needs for loop, instead of just being set to null
+ * getGeoDetails: var state needs For Loop, instead of just being set to null
  * improve code logic with promises?
 */
 
 class Luna_Zemanim_Widget extends WP_Widget {
 
-/**
- * Register widget with WordPress
- */
-public function __construct() {
-  parent::__construct(
-    'luna_zemanim_widget', // Base ID
-    __('Daily Zemannim', 'luna_zemanim_widget_domain'), // Name
-    array( 'description' => __( "Displays Zemannim (times) according to Sepharadic tradition", 'luna_zemanim_widget_domain' ),  ) //Args
-  ); 
+  /**
+   * Register widget with WordPress
+   */
+  public function __construct() {
+    parent::__construct(
+      'luna_zemanim_widget', // Base ID
+      __('Daily Zemannim', 'luna_zemanim_widget_domain'), // Name
+      array( 'description' => __( "Displays Zemannim (times) according to Sepharadic tradition", 'luna_zemanim_widget_domain' ),  ) //Args
+    ); 
 
-add_action( 'widgets_init', function() {register_widget( 'Luna_Zemanim_Widget' ); } );
-}
-
-/**
- * Front-end display of widget.
- * 
- * @see WP_Widget::widget()
- * 
- * @param array $args     Widget Arguments.
- * @param array $instance Saved values from database   */
-public function widget( $args, $instance ) {
-  wp_enqueue_script( 'suncalc-master', plugins_url( '/suncalc-master/suncalc.js?ver=4.9.4', __FILE__ ) );
-
-  $title = apply_filters( 'widget_title', $instance['title'] );
-
-  echo $args['before_widget'];
-  if ( ! empty( $title ) ) {
-    echo $args['before_title'] . $title . $args['after_title'];
+  add_action( 'widgets_init', function() {register_widget( 'Luna_Zemanim_Widget' ); } );
   }
 
-function outputZemanim() { ?>
-    <div id="zemanim_container">
-        <div id="zemanim_display">
-            <span id="zemanim_date"></span>
-            <span id="zemanim_city"></span>
-            <span id="zemanim_hebrew">
-              <script type="text/javascript" charset="utf-8" src="//www.hebcal.com/etc/hdate-he.js"></script><br>
-            </span>
-            <span id="zemanim_shema"></span>
-            <span id="zemanim_minha"></span>
-            <span id="zemanim_peleg"></span>
-            <span id="zemanim_sunset"></span>
-        </div>
-    </div>
+  /**
+   * Front-end display of widget.
+   * 
+   * @see WP_Widget::widget()
+   * 
+   * @param array $args     Widget Arguments.
+   * @param array $instance Saved values from database   */
+  public function widget( $args, $instance ) {
+    wp_enqueue_script( 'suncalc-master', plugins_url( '/suncalc-master/suncalc.js?ver=4.9.4', __FILE__ ) );
 
-<?php
-}
+    $title = apply_filters( 'widget_title', $instance['title'] );
+
+    echo $args['before_widget'];
+    if ( ! empty( $title ) ) {
+      echo $args['before_title'] . $title . $args['after_title'];
+    }
+
+  function outputZemanim() { 
+    $today = date("F, j, Y"); ?>
+
+      <div id="zemanim_container">
+          <div id="zemanim_display">
+              <span id="zemanim_date">Times for <?php echo($today) ?><br></span>
+              <span id="zemanim_city"></span>
+              <span id="zemanim_hebrew">
+                <script type="text/javascript" charset="utf-8" src="//www.hebcal.com/etc/hdate-he.js"></script><br>
+              </span>
+              <span id="zemanim_shema">Latest Shema: <br></span>
+              <span id="zemanim_minha">Earliest Minḥa:  <br></span>
+              <span id="zemanim_peleg">Peleḡ HaMinḥa:  <br></span>
+              <span id="zemanim_sunset">Sunset <br></span>
+          </div>
+      </div>
+
+  <?php
+  }
 outputZemanim();
 ?>
 
@@ -97,24 +99,32 @@ outputZemanim();
   var z_sunset = document.getElementById("zemanim_sunset");    
   var zemanim = document.getElementById("zemanim_container");
 
-  function getLocation()
-    {
-      var options = {
-        enableHighAccuracy: true,
-        maximumAge: 0
-      };
+  /**
+   * getLocation - gets user's lat & long via HTML5 Geolocation API sends to getGeoDetails
+   * @return {(number|Array)} [lat, long] coordinates
+   */
+  function getLocation() {
+    var options = {
+      enableHighAccuracy: true,
+      maximumAge: 0
+    };
 
-      function error(err) {
-        console.warn(`ERROR(${err.code}): ${err.message}`);
-      zemanim.innerHtml = "Please enable location services to display the most up-to-date Zemanim";
-            getAddrDetailsByIp();
-      }
-
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(getLatLngByGeo, error, options);
-      }
+    function error(err) {
+      console.warn(`ERROR(${err.code}): ${err.message}`);
+    zemanim.innerHtml = "Please enable location services to display the most up-to-date Zemanim";
+          getAddrDetailsByIp();
     }
 
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(getLatLngByGeo, error, options);
+      }
+  }
+
+  /**
+   * getLatLngByGeo - separate [lat, long] int lat & long vars, pass to Google Maps API via getGeoDetails
+   * @param  {number|Array} position [lat, long]
+   * @return {[type]}          [description]
+   */
   function getLatLngByGeo(position) {
     var pos = position;
     var lat = pos.coords.latitude;
@@ -158,6 +168,12 @@ outputZemanim();
       });
   }
 
+  /**
+   * [getGeoDetails feed lat & long coords into Google Maps API to obtain City, State info and pass to generateTimes ]
+   * @param  {[float]} lat_crd  [user's lattitude]
+   * @param  {[float]} long_crd [user's longitude]
+   * @return {[string]} cityStr [user's City, State]
+   */
   function getGeoDetails(lat_crd, long_crd) {
     let lat = lat_crd;
     let long = long_crd;
@@ -325,20 +341,20 @@ outputZemanim();
  * 
  * @param array $instance Previously saved values from database.
  */
-public function form( $instance ) {
-if ( isset( $instance[ 'title' ] ) ) {
-  $title = $instance[ 'title' ];
-}
-else {
-  $title = __( 'New title', 'luna_zemanim_widget_domain' );
-}
+  public function form( $instance ) {
+    if ( isset( $instance[ 'title' ] ) ) {
+      $title = $instance[ 'title' ];
+    }
+    else {
+      $title = __( 'New title', 'luna_zemanim_widget_domain' );
+    }
 
-// Widget admin form
+  // Widget admin form
 ?>
-<p>
-<label for="<?php echo $this->get_field_id( 'title' ); ?>"><?php _e( 'Title:' ); ?></label> 
-<input class="widefat" id="<?php echo $this->get_field_id( 'title' ); ?>" name="<?php echo $this->get_field_name( 'title' ); ?>" type="text" value="<?php echo esc_attr( $title ); ?>" />
-</p>
+  <p>
+    <label for="<?php echo $this->get_field_id( 'title' ); ?>"><?php _e( 'Title:' ); ?></label> 
+    <input class="widefat" id="<?php echo $this->get_field_id( 'title' ); ?>" name="<?php echo $this->get_field_name( 'title' ); ?>" type="text" value="<?php echo esc_attr( $title ); ?>" />
+  </p>
 <?php
 } 
 
