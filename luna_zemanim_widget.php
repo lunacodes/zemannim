@@ -76,7 +76,7 @@ class Luna_Zemanim_Widget extends WP_Widget {
               <span id="zemanim_date">Times for <?php echo($today) ?><br></span>
               <span id="zemanim_city"></span>
               <span id="zemanim_hebrew">
-                <script type="text/javascript" charset="utf-8" src="//www.hebcal.com/etc/hdate-he.js"></script><br>
+                <script type="text/javascript" charset="utf-8" src="https://www.hebcal.com/etc/hdate-he.js"></script><br>
               </span>
               <span id="zemanim_shema">Latest Shema: <br></span>
               <span id="zemanim_minha">Earliest Minḥa:  <br></span>
