@@ -76,7 +76,7 @@ class Luna_Zemanim_Widget extends WP_Widget {
               <span id="zemanim_date">Times for <?php echo($today) ?><br></span>
               <span id="zemanim_city"></span>
               <span id="zemanim_hebrew">
-                <script type="text/javascript" charset="utf-8" src="https://www.hebcal.com/etc/hdate-he.js"></script><br>
+                <script type="text/javascript" charset="utf-8" src="//www.hebcal.com/etc/hdate-he.js"></script><br>
               </span>
               <span id="zemanim_shema">Latest Shema: <br></span>
               <span id="zemanim_minha">Earliest Minḥa:  <br></span>
@@ -262,10 +262,10 @@ outputZemanim();
     var sunriseSec = SunriseDateTimeInt - offSet;
     var sunsetSec = SunsetDateTimeInt - offSet;
 
-    var latestShemaStr = '<span id="zmantitle">Latest Shema: </span>' + calculateLatestShema(sunriseSec, sunsetSec, offSetSec);
-    var earliestMinhaStr = '<span id="zmantitle">Earliest Minḥa: </span>' + calculateEarliestMinha(sunriseSec, sunsetSec, offSetSec);
-    var pelegHaMinhaStr = '<span id="zmantitle">Peleḡ HaMinḥa: </span>' + calculatePelegHaMinha(sunriseSec, sunsetSec, offSetSec);
-    var displaySunsetStr = '<span id="zmantitle">Sunset: </span>' + unixTimestampToDate(SunsetDateTimeInt+offSetSec);
+    var latestShemaStr = '<span id="zemanim_shema">Latest Shema: </span>' + calculateLatestShema(sunriseSec, sunsetSec, offSetSec);
+    var earliestMinhaStr = '<span id="zemanim_minha">Earliest Minḥa: </span>' + calculateEarliestMinha(sunriseSec, sunsetSec, offSetSec);
+    var pelegHaMinhaStr = '<span id="zemanim_peleg">Peleḡ HaMinḥa: </span>' + calculatePelegHaMinha(sunriseSec, sunsetSec, offSetSec);
+    var displaySunsetStr = '<span id="zemanim_sunset">Sunset: </span>' + unixTimestampToDate(SunsetDateTimeInt+offSetSec);
 
     displayTimes(dateStr, cityStr, latestShemaStr, earliestMinhaStr, pelegHaMinhaStr, displaySunsetStr);
   }
