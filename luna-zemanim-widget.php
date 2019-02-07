@@ -880,19 +880,10 @@ function displayShabbatTimes(timeSet, cityStr) {
 	 */
 	public function form( $instance ) {
 
-		$defaults = array('translit' => 'Sepharadi');
-		$instance = wp_parse_args( (array) $instance, $defaults );
-		// $translit = $new_instance();
 		if ( isset( $instance['title'] ) ) {
 			$title = $instance['title'];
 		} else {
 			$title = __( 'New title', 'luna_zemanim_widget_hebcal_domain' );
-		}
-
-		if ( isset( $instance['translit'] ) ) {
-			$translit = $instance['translit'];
-		} else {
-			$translit = __( 'Sepharadi', 'luna_zemanim_widget_hebcal_domain' );
 		}
 
 		// Widget admin form.
@@ -901,12 +892,6 @@ function displayShabbatTimes(timeSet, cityStr) {
 	<p>
 		<label for="<?php echo( esc_attr( $this->get_field_id( 'title' ) ) ); ?>"><?php _e( 'Title:' ); ?></label>
 		<input class="widefat" id="<?php echo esc_attr( $this->get_field_id( 'title' ) ); ?>" name="<?php echo $this->get_field_name( 'title' ); ?>" type="text" value="<?php echo esc_attr( $title ); ?>" />
-	</p>
-
-	<p>
-	  <input class="checkbox" type="checkbox" <?php if($translit) echo ' checked="checked"' ?> id="<?php echo $this->get_field_id('translit'); ?>" name="<?php echo $this->get_field_name('translit'); ?>" />
-	  <label for="<?php echo esc_attr( $this->get_field_id( 'translit' ) ); ?>"><?php esc_attr_e( 'Sepharadi', 'luna_zemanim_widget_hebcal_domain' ); ?></label>
-
 	</p>
 
 		<?php
@@ -928,14 +913,6 @@ function displayShabbatTimes(timeSet, cityStr) {
 		$instance = array();
 		$instance['title'] = ( ! empty( $new_instance['title'] ) ) ? strip_tags( $new_instance['title'] ) : '';
 
-		// $instance['translit'] = ( ! empty( $new_instance['translit'] ) ) ? strip_tags( $new_instance['translit'] ) : '';
-		$instance['translit'] = $new_instance['translit'];
-		// $instance['translit'] = " ";
-		var_dump($instance);
-		var_dump($new_instance);
-
-		// $instance['layout'] = ( ! empty( $new_instance['layout'] ) ) ? strip_tags( $new_instance['layout'] ) : '';
-		// $instance['count'] = ( ! empty( $new_instance['count'] ) ) ? strip_tags( $new_instance['count'] ) : '';
 		return $instance;
 	}
 
