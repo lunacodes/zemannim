@@ -5,7 +5,7 @@
  * Description: Displays Zemannim (times) according to Sepharadic tradition.
  *   Uses the DB-IP API and the Google Maps API for geographic information.
  *   Uses the Sun-Calc Library (https://github.com/mourner/suncalc) for sunrise/sunset information.
- * Version: 1.3.2
+ * Version: 1.3.3
  *
  * @author Luna Lunapiena
  * @link: https://lunacodesdesign.com/
@@ -31,15 +31,7 @@
  */
 
 /**
- * Issues:
- * ***********************************
- * getGeoDetails: var state needs For Loop, instead of just being set to null
- * improve code logic with promises?
- * MAJOR: I NEED TO ADD DATE AND TIME CALCULATIONS FOR SATURDAY!!!
- */
-
-/**
- * Stuff
+ * Daily Zemannim Widget
  */
 class Luna_Zemanim_Widget_Hebcal extends WP_Widget {
 
@@ -74,7 +66,7 @@ class Luna_Zemanim_Widget_Hebcal extends WP_Widget {
 		$suncalc_version  = date( 'ymd-Gis', filemtime( plugin_dir_path( __FILE__ ) . 'suncalc-master/suncalc.js' ) );
 
 		wp_enqueue_script( 'suncalc-master', plugins_url( '/suncalc-master/suncalc.js', __FILE__ ), '', $suncalc_version );
-		// wp_enqueue_script( 'google-maps', 'https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false&key=AIzaSyAmCeKW07UlPDH_eQarF4y9vWJ6cwHePp4', array(), true );
+		wp_enqueue_script( 'google-maps', 'https://maps.googleapis.com/maps/api/js?v=3.exp&key=AIzaSyDgpmHtOYqSzG9JgJf98Isjno6YwVxCrEE', array(), true );
 
 		$title = apply_filters( 'widget_title', $instance['title'] );
 
@@ -86,13 +78,30 @@ class Luna_Zemanim_Widget_Hebcal extends WP_Widget {
 		// phpcs:enable
 
 		/**
+		 * Generates the Hebrew Date from a passed in date object
+		 *
+		 * @param  object $date the date.
+		 * @return string       The Hebrew rendition of the date.
+		 */
+		function generateHebrewDate( $date ) {
+			$month = idate( 'm', $date );
+			$day = idate( 'j', $date );
+			$year = idate( 'Y', $date );
+			$jdate = gregoriantojd( $month, $day, $year );
+			$jd2 = jdtojewish( $jdate, true, CAL_JEWISH_ADD_GERESHAYIM );
+
+			$heb_date_str = mb_convert_encoding( "$jd2", 'utf-8', 'ISO-8859-8' );
+			return $heb_date_str;
+		}
+
+		/**
 		 * Generates English and Hebrew dates for current day and upcoming Shabbath.
 		 *
 		 * @since 1.2.0
 		 *
 		 * @return array Contains English and Hebrew dates the current day and upcoming Shabbath
 		 */
-		function generateDatesWithHebcal() {
+		function generatePreDates() {
 			$today = date( 'F, j, Y' );
 			$today_int = strtotime( 'now' );
 			$day_of_week = date( 'N' );
@@ -112,7 +121,7 @@ class Luna_Zemanim_Widget_Hebcal extends WP_Widget {
 			$dates = [ $today_str, $today_heb_str, $shabbat_str, $shabbat_heb_str, $shabbat_iso ];
 			return $dates;
 		}
-		$dates = generateDatesWithHebcal();
+		$dates = generatePreDates();
 
 		/**
 		 * Pre-generate the html structure for the front-end display.
@@ -121,30 +130,31 @@ class Luna_Zemanim_Widget_Hebcal extends WP_Widget {
 		 *
 		 * @param  list $dates A list containing date strings to be outputted in the HTML.
 		 */
-		function outputZemannimWithHebcal( $dates ) {
+		function outputPreDates( $dates ) {
 			$today = $dates[0];
 			$today_heb = $dates[1];
 			$shabbat = $dates[2];
 			$shabbat_heb = $dates[3];
+
 			?>
 
-		<div id="zemannim_container">
+		<div class="zemannim-text" id="zemannim_container">
 				<div id="zemannim_display">
 						<span id="zemannim_date">Times for <?php echo( esc_attr( $today ) ); ?><br></span>
 						<span id="zemannim_city"></span>
 						<span id="zemannim_hebrew"><?php echo( esc_attr( $today_heb ) ); ?><br></span>
 						<span id="zemannim_shema">Latest Shema: <br></span>
-						<span id="zemannim_minha">Earliest Minḥa:  <br></span>
-						<span id="zemannim_peleg">Peleḡ haMinḥa:  <br></span>
+						<span id="zemannim_minha">Earliest Minḥa: <br></span>
+						<span id="zemannim_peleg">Peleḡ haMinḥa: <br></span>
 						<span id="zemannim_sunset">Sunset: <br></span>
 				</div>
 		</div>
-		<br><br>
+		<br>
 		<h4 class="widgettitle widget-title shabbat-title">Shabbat Zemannim</h4>
-		<div id="shabbat_zemannim_container">
+		<div class="zemannim-text" id="shabbat_zemannim_container">
 				<div id="shabbat_zemannim_display">
 						<span id="shzm_date">Shabbat Times for <?php echo( esc_attr( $shabbat ) ); ?><br></span>
-						<span id="shzm_perasha"></span>
+						<span id="shzm_perasha">Perasha <br></span>
 						<span id="shzm_date_heb"><?php echo( esc_attr( $shabbat_heb ) ); ?><br></span>
 						<!-- <span id="shzm_city"></span> -->
 						<span id="shzm_perasha_heb"></span>
@@ -157,111 +167,227 @@ class Luna_Zemanim_Widget_Hebcal extends WP_Widget {
 			<?php
 		}
 
-		outputZemannimWithHebcal( $dates );
+		outputPreDates( $dates );
 		?>
 
 <script type="text/javascript" defer>
-/*jshint esversion: 6 */
+/* jshint esversion: 6 */
+/* jshint node: true */
+/* jshint strict: global */
+'use strict';
 
-var zemannim = document.getElementById("zemannim_container");
-var z_city = document.getElementById("zemannim_city");
-var z_shema = document.getElementById("zemannim_shema");
-var z_minha = document.getElementById("zemannim_minha");
-var z_peleg = document.getElementById("zemannim_peleg");
-var z_sunset = document.getElementById("zemannim_sunset");
-var shabbat_zemannim = document.getElementById("shzm_container");
-var sz_date = document.getElementById("shzm_date");
-var sz_date_heb = document.getElementById("shzm_date_heb");
-var sz_perasha = document.getElementById("shzm_perasha");
-var sz_perasha_heb = document.getElementById("shzm_perasha_heb");
-var sz_candles = document.getElementById("shzm_candles");
-var sz_sunset = document.getElementById("shzm_sunset");
-var sz_habdala = document.getElementById("shzm_habdala");
+var zemannim = document.getElementById('zemannim_container');
+var z_date = document.getElementById('zemannim_date');
+var z_city = document.getElementById('zemannim_city');
+var z_shema = document.getElementById('zemannim_shema');
+var z_minha = document.getElementById('zemannim_minha');
+var z_peleg = document.getElementById('zemannim_peleg');
+var z_sunset = document.getElementById('zemannim_sunset');
+var shabbat_zemannim = document.getElementById('shzm_container');
+var sz_date = document.getElementById('shzm_date');
+var sz_date_heb = document.getElementById('shzm_date_heb');
+var sz_perasha = document.getElementById('shzm_perasha');
+var sz_perasha_heb = document.getElementById('shzm_perasha_heb');
+var sz_candles = document.getElementById('shzm_candles');
+var sz_sunset = document.getElementById('shzm_sunset');
+var sz_habdala = document.getElementById('shzm_habdala');
 
-function hebCalJS(cityStr, lat, long, tzid) {
-	let urlStr = 'https://www.hebcal.com/hebcal/?v=1&cfg=json&maj=on&min=on&nx=on&ss=on&mod=off&s=on&c=on&m=20&b=18&o=on&D=on&year=now&month=2&i=off&geo=pos' + '&latitude=' + lat + '&longitude=' + long + '&tzid=' + tzid;
-	// console.log("Shabbat URL: " + urlStr);
+function getShabbatDate(dayNum, dayDate) {
+	if (dayNum < 7) {
+		let i = 7 - dayNum;
+		let dateMod = dayDate + i;
+		let fri = new Date();
+		let sat = new Date();
 
-	/*jshint sub:true*/
-	let city = cityStr;
+		fri.setDate(dateMod - 2);
+		sat.setDate(dateMod - 1);
+		// console.log('fri, sat', fri, sat);
+
+		return [fri, sat];
+	}
+}
+
+function getCandleTimes(data, date) {
+	// console.log('getCandleTimes data date:', data, date);
+	let candlesList = [];
+	const d1 = new Date(date);
+
+	data.forEach((item) => {
+		let d2 = new Date(item.date);
+		// console.log('d1, d2', d1, d2);
+		let same = d1.getDate() === d2.getDate();
+		// console.log(same);
+
+		if ((item.category === 'candles') && same) {
+			// console.log('candles item:', item, item.category);
+			candlesList.push(item);
+		}
+	});
+	return candlesList[0];
+}
+
+function getHebDate(data, date) {
+	// console.log('getCandleTimes data date:', data, date);
+	let hebDatesList = [];
+	const d1 = new Date(date);
+
+	data.forEach((item) => {
+		let d2 = new Date(item.date);
+		let same = d1.getDate() === d2.getDate();
+		// console.log(same);
+
+		if ((item.category === 'hebdate') && same) {
+			hebDatesList.push(item);
+			// console.log('hebDatesList', hebDatesList);
+			}
+		});
+	return hebDatesList[0].hebrew;
+}
+
+function getPerasha(data, date) {
+	let perashaList = [];
+	const d1 = new Date(date);
+
+	data.forEach((item) => {
+		let d2 = new Date(item.date);
+		let same = (d1.getDate() -1) === (d2.getDate());
+
+		// console.log(item.category);
+		if ((item.category === 'parashat') && same ) {
+			// console.log('success', item);
+			perashaList.push(item);
+			// console.log('p2', perashaList);
+			return perashaList[0];
+		}
+	});
+	return perashaList[0];
+}
+
+function getHabdalaTimes(data, date) {
+	let habdalaTimes = [];
+	const d1 = new Date(date);
+
+	data.forEach((item) => {
+		let d2 = new Date(item.date);
+		let same = d1.getDate() === d2.getDate();
+		// console.log(same);
+
+		if ((item.category === 'havdalah') && same) {
+			// console.log(item.category);
+			habdalaTimes.push(item);
+			// console.log(habdalaTimes);
+		}
+	});
+	return habdalaTimes;
+}
+
+function hebCalGetSunset(timestr) {
+		let str = timestr;
+		// let index = str.indexOf(':') + 2;
+		let time = str.replace(/\D/g,'');
+		let hr = time.slice(0,1);
+		let min = time.slice(-2);
+		min = parseInt(min) + 18;
+
+		if (min >= 60) {
+				min -=60;
+				if (min < 10) {
+						min = min.toString().padStart(2,0);
+				}
+
+				hr = parseInt(hr);
+				hr += 1;
+		}
+
+		time = hr + ':' + min;
+		return time;
+}
+
+function getDaysInMonth(month, year) {
+	return new Date(year, month, 0).getDate();
+}
+
+function hebCalShab(cityStr, lat, long, tzid) {
+	const now = new Date();
+	let month = now.getMonth() + 1;
+	let year = now.getYear();
+	let daysInMonth = getDaysInMonth(month, year);
+	// tmpDayNum may be redundant w/ todayNum - doublecheck later
+	let tmpDayNum = now.getDate();
+	if ( daysInMonth === tmpDayNum ) {
+		month = month + 1;
+	}
+	// console.log(now);
+	// console.log("m, y, dim, tdn", month, year, daysInMonth, tmpDayNum);
+
+	let urlStr = 'https://www.hebcal.com/hebcal/?v=1&cfg=json&maj=on&min=on&nx=on&ss=on&mod=off&s=on&c=on&m=20&b=18&o=on&D=on&year=now&month=' + month + '&i=off&geo=pos' + '&latitude=' + lat + '&longitude=' + long + '&tzid=' + tzid;
+	// console.log("hebCalShab urlStr", urlStr);
+
+	// Talk to Hebcal API
 	fetch(urlStr)
 		.then(function(response) {
 			return response.json();
 		})
 		.then(function(res) {
 			// console.log(res);
-			let data = res["items"];
-			// console.log("Data: " + data);
-			let name = res["title"];
-			// let dateStr = res["date"];
-			const date = new Date(res["date"]);
-			// console.log(date);
-			let dateStr = date.toLocaleString('en-us', { month: 'long', day: 'numeric', year: 'numeric' });
-			engdate = "Shababt Times for " + dateStr;
+			let data = res.items;
+			// console.log(data);
 
-			let hebdate = data[0]["hebrew"];
+			// Today's Data
+			let today = now.toLocaleString('en-us', { month: 'long', day: 'numeric', year: 'numeric' });
+			let todayStr = 'Times for ' + today;
+			let todayNum = now.getDay();
+			let todayDate = now.getDate();
+
+			/* Shabbath Section */
+			let shabbatDate = getShabbatDate(todayNum, todayDate);
+			let fri = shabbatDate[0];
+			let sat = shabbatDate[1];
+
+			// Shabbath Strings
+			let dateStr = fri.toLocaleString('en-us', { month: 'long', day: 'numeric', year: 'numeric' });
+			let engdate = 'Shabbat Times for ' + dateStr;
+			let hebdate = getHebDate(data, fri);
 
 			// Candles & Sunset
-			let candles = data[10]["title"];
+			let candlesData = getCandleTimes(data, fri);
+			let candles = candlesData.title;
 			let sunset = hebCalGetSunset(candles);
-			sunset = "Sunset: " + sunset;
-			// console.log(sunset);
-			let habdala = data[4]["title"];
-			let index = habdala.indexOf("(") - 1;
+			sunset = 'Sunset: ' + sunset;
+
+			// Habdala Info
+			let habdalaData = getHabdalaTimes(data, sat);
+			let habdala = habdalaData[0].title;
+			let index = habdala.indexOf('(') - 1;
 			habdala = 'Haḇdala' + habdala.slice(index);
-			// indexHab
 
 			// Perasha Info
-			let perashaHeb = data[3]["hebrew"];
-			let perashaEng = data[3]["title"];
+			let perasha = getPerasha(data, sat);
+			// console.log('getPerasha returned:', perasha)
+			let perashaHeb = perasha.hebrew;
+			// console.log('perasha.title:', perasha.title)
+			let perashaEng = perasha.title;
+			let phIndex = perashaHeb.indexOf('ת') + 1;
+			perashaHeb = 'פרשה' + perashaHeb.slice(phIndex);
 
-			var str = perashaEng;
-			var firstSpace=str.indexOf(" ");
-			var perashaShort= str.slice(firstSpace + 1);
-			let a2s = ashkiToSeph(perashaShort, 'perasha');
-			perashaEng = "Perasha " + a2s;
+			// Transliterations
+			let str = perashaEng;
+			let firstSpace=str.indexOf(' ');
+			let perashaShort= str.slice(firstSpace + 1);
+			let a2s = ashkiToSeph(perashaShort, 'p');
+			// let a2sTest = ashkiToSeph("Asara B'Tevet", 'p');
+			perashaEng = 'Perasha ' + a2s;
 
-			var hebCalFinal = [engdate, hebdate, perashaHeb, perashaEng, candles, sunset, habdala];
-			// console.log("HebCalFinal:", hebCalFinal);
-			displayShabbatTimes(hebCalFinal, city);
-			// return hebCalFinal;
-			/*jshint sub:false*/
+			let shabbatSet = [engdate, perashaEng, hebdate, perashaHeb, candles, sunset, habdala];
+			let todaySet = timesHelper(lat, long);
+
+			displayTimes(todaySet, shabbatSet, cityStr, todayStr);
 	});
 }
 
-function hebCalGetSunset(timestr) {
-		let str = timestr;
-		let index = str.indexOf(":") + 2;
-		let time = str.replace(/\D/g,'');
-		let hr = time.slice(0,1);
-		let min = time.slice(-2);
-		min = parseInt(min) + 18;
-		// console.log(min);
-
-		if (min >= 60) {
-				min -=60;
-				// console.log(min);
-				if (min < 10) {
-						min = min.toString().padStart(2,0);
-						// console.log(min);
-				}
-
-				hr = parseInt(hr);
-				hr += 1;
-				// console.log("Adj: ", min, hr);
-		}
-
-		time = hr + ":" + min;
-		// console.log(time);
-		return time;
-
-}
-
-function ashkiToSeph(input, type) {
-	/* Consider either using a second variable for Perasha vs Holiday. Or separating them into 2 holidays... or just don't bother
-	for now type can either be `perasha` or `holiday`*/
-	// console.log(ashkiToSeph);
-	var perashaList = [
+function ashkiToSeph(input, sel) {
+	/* jshint quotmark: double */
+	let perashaList = [
 		["Parashat", "Perasha"],
 		["Achrei Mot", "ʾAḥare Mot"],
 		["Balak", "Balaq"],
@@ -320,121 +446,136 @@ function ashkiToSeph(input, type) {
 		["Asara B'Tevet", "ʿAsara Beṭeḇet"]
 	];
 
-	var holidays = [
-		['ashkiHol', 'Yitro'],
-		['ashkiHol', 'ʿAsara Beṭeḇet'],
-		['ashkiHol', 'Haḏlaqat Nerot'],
-		['ashkiHol', 'Ḥanukka'],
-		['ashkiHol', 'Ḥanukka: Ner I'],
-		['ashkiHol', 'Ḥanukka: Ner II'],
-		['ashkiHol', 'Ḥanukka: Ner III'],
-		['ashkiHol', 'Ḥanukka: Ner IV'],
-		['ashkiHol', 'Ḥanukka: Ner V'],
-		['ashkiHol', 'Ḥanukka: Ner VI'],
-		['ashkiHol', 'Ḥanukka: Ner VII'],
-		['ashkiHol', 'Ḥanukka: Ner VIII'],
-		['ashkiHol', 'Ḥanukka: Yom VIII '],
-		['ashkiHol', 'ʿOmer'],
-		['ashkiHol', 'ʿEreḇ Pesaḥ'],
-		['ashkiHol', 'ʿEreḇ Purim'],
-		['ashkiHol', 'ʿEreḇ Rosh Hashana'],
-		['ashkiHol', 'ʿEreḇ Shaḇuʿot'],
-		['ashkiHol', 'ʿEreḇ Simḥat Torah'],
-		['ashkiHol', 'ʿEreḇ Sukot'],
-		['ashkiHol', 'ʿEreḇ Tishʿa Beʾaḇ'],
-		['ashkiHol', 'ʿEreḇ Yom HakKippurim'],
-		['ashkiHol', 'Haḇḏala'],
-		['ashkiHol', 'Lag LaʿOmer'],
-		['ashkiHol', 'Seliḥot'],
-		['ashkiHol', 'Pesaḥ'],
-		['ashkiHol', 'Pesaḥ Yom I'],
-		['ashkiHol', 'Pesaḥ Yom II'],
-		['ashkiHol', 'Pesaḥ (Ḥol HaMoʿḏ) Yom II'],
-		['ashkiHol', 'Pesaḥ (Ḥol HaMoʿḏ) Yom III'],
-		['ashkiHol', 'Pesaḥ (Ḥol HaMoʿḏ) Yom IV'],
-		['ashkiHol', 'Pesaḥ Sheni'],
-		['ashkiHol', 'Pesaḥ (Ḥol HaMoʿḏ) Yom V'],
-		['ashkiHol', 'Pesaḥ (Ḥol HaMoʿḏ) Yom VI'],
-		['ashkiHol', 'Pesaḥ Yom VII'],
-		['ashkiHol', 'Pesaḥ Yom VIII'],
-		['ashkiHol', 'Purim'],
-		['ashkiHol', 'Purim Qaṭan'],
-		['ashkiHol', 'Rosh Ḥoḏesh'],
-		['ashkiHol', 'ʾAḏar'],
-		['ashkiHol', 'ʾAḏar I'],
-		['ashkiHol', 'ʾAḏar II'],
-		['ashkiHol', 'ʾAḇ'],
-		['ashkiHol', 'Marḥeshvan'],
-		['ashkiHol', 'ʾElul'],
-		['ashkiHol', 'ʾIyayr'],
-		['ashkiHol', 'Kislev'],
-		['ashkiHol', 'Nisan'],
-		['ashkiHol', 'Sheḇaṭ'],
-		['ashkiHol', 'Sivan'],
-		['ashkiHol', 'Tamuz'],
-		['ashkiHol', 'Ṭeḇet'],
-		['ashkiHol', 'Rosh Hashana'],
-		['ashkiHol', 'Rosh Hashana Yom I'],
-		['ashkiHol', 'Rosh Hashana Yom II'],
-		['ashkiHol', 'Shabbat Ḥazon'],
-		['ashkiHol', 'Shabbat HaḤoḏesh'],
-		['ashkiHol', 'Shabbat Haggaḏol'],
-		['ashkiHol', 'Shabbat Maḥar Ḥoḏesh'],
-		['ashkiHol', 'Shabbat Naḥamu'],
-		['ashkiHol', 'Shabbat Para'],
-		['ashkiHol', 'Shabbat Rosh Ḥoḏesh'],
-		['ashkiHol', 'Shabbat Sheqalim'],
-		['ashkiHol', 'Shabbat Shuḇa'],
-		['ashkiHol', 'Shabbat Zakhor'],
-		['ashkiHol', 'Shaḇuʿot'],
-		['ashkiHol', 'Shaḇuʿot Yom I'],
-		['ashkiHol', 'Shaḇuʿot Yom II'],
-		['ashkiHol', 'Shemini ʿAṣeret'],
-		['ashkiHol', 'Shushan Purim'],
-		['ashkiHol', 'Sigd'],
-		['ashkiHol', 'Simḥat Tora'],
-		['ashkiHol', 'Sukkot'],
-		['ashkiHol', 'Sukkot Yom I'],
-		['ashkiHol', 'Sukkot Yom II'],
-		['ashkiHol', 'Sukkot (Ḥol HaMoʿḏ) Yom II'],
-		['ashkiHol', 'Sukkot (Ḥol HaMoʿḏ) Yom III'],
-		['ashkiHol', 'Sukkot (Ḥol HaMoʿḏ) Yom IV'],
-		['ashkiHol', 'Sukkot (Ḥol HaMoʿḏ) Yom V'],
-		['ashkiHol', 'Sukkot (Ḥol HaMoʿḏ) Yom VI'],
-		['ashkiHol', 'Sukkot (Hoshaʿna Rabba) Yom VII'],
-		['ashkiHol', 'Taʿanit Bekhorot'],
-		['ashkiHol', 'Taʿanit ʾEster'],
-		['ashkiHol', 'Tishʿa Beʾaḇ'],
-		['ashkiHol', 'Ṭu Beʾaḇ'],
-		['ashkiHol', 'Ṭu Bishḇaṭ'],
-		['ashkiHol', 'Ṭu Bishḇaṭ'],
-		['ashkiHol', 'Ṣom Geḏalya'],
-		['ashkiHol', 'Ṣom Tamuz'],
-		['ashkiHol', 'Yom Haʿaṣmaʾut'],
-		['ashkiHol', 'Yom Hashoʾa'],
-		['ashkiHol', 'Yom Hazzikkaron'],
-		['ashkiHol', 'Yom HakKippurim'],
-		['ashkiHol', 'Yom Yerushalayim'],
-		['ashkiHol', 'Yom HaʿAliya'],
+	let holidayList = [
+		["Asara B'Tevet", "ʿAsara Beṭeḇet"],
+		["Candle lighting", "Haḏlaqat Nerot"],
+		["Chanukah", "Ḥanukka"],
+		["Chanukah: 1 Candle", "Ḥanukka: Ner I"],
+		["Chanukah: 2 Candles", "Ḥanukka: Ner II"],
+		["Chanukah: 3 Candles", "Ḥanukka: Ner III"],
+		["Chanukah: 4 Candles", "Ḥanukka: Ner IV"],
+		["Chanukah: 5 Candles", "Ḥanukka: Ner V"],
+		["Chanukah: 6 Candles", "Ḥanukka: Ner VI"],
+		["Chanukah: 7 Candles", "Ḥanukka: Ner VII"],
+		["Chanukah: 8 Candles", "Ḥanukka: Ner VIII"],
+		["Chanukah: 8th Day", "Ḥanukka: Yom VIII "],
+		["Days of the Omer", "ʿOmer"],
+		["Erev Pesach", "ʿEreḇ Pesaḥ"],
+		["Erev Purim", "ʿEreḇ Purim"],
+		["Erev Rosh Hashana", "ʿEreḇ Rosh Hashana"],
+		["Erev Shavuot", "ʿEreḇ Shaḇuʿot"],
+		["Erev Simchat Torah", "ʿEreḇ Simḥat Torah"],
+		["Erev Sukkot", "ʿEreḇ Sukot"],
+		["Erev Tish'a B'Av", "ʿEreḇ Tishʿa Beʾaḇ"],
+		["Erev Yom Kippur", "ʿEreḇ Yom HakKippurim"],
+		["Havdalah", "Haḇḏala"],
+		["Lag BaOmer", "Lag LaʿOmer"],
+		["Leil Selichot", "Seliḥot"],
+		["Pesach", "Pesaḥ"],
+		["Pesach I", "Pesaḥ Yom I"],
+		["Pesach II", "Pesaḥ Yom II"],
+		["Pesach II (CH''M)", "Pesaḥ (Ḥol HaMoʿḏ) Yom II"],
+		["Pesach III (CH''M)", "Pesaḥ (Ḥol HaMoʿḏ) Yom III"],
+		["Pesach IV (CH''M)", "Pesaḥ (Ḥol HaMoʿḏ) Yom IV"],
+		["Pesach Sheni", "Pesaḥ Sheni"],
+		["Pesach V (CH''M)", "Pesaḥ (Ḥol HaMoʿḏ) Yom V"],
+		["Pesach VI (CH''M)", "Pesaḥ (Ḥol HaMoʿḏ) Yom VI"],
+		["Pesach VII", "Pesaḥ Yom VII"],
+		["Pesach VIII", "Pesaḥ Yom VIII"],
+		["Purim", "Purim"],
+		["Purim Katan", "Purim Qaṭan"],
+		["Rosh Chodesh %s", "Rosh Ḥoḏesh"],
+		["Adar", "ʾAḏar"],
+		["Adar I", "ʾAḏar I"],
+		["Adar II", "ʾAḏar II"],
+		["Av", "ʾAḇ"],
+		["Cheshvan", "Marḥeshvan"],
+		["Elul", "ʾElul"],
+		["Iyyar", "ʾIyayr"],
+		["Kislev", "Kislev"],
+		["Nisan", "Nisan"],
+		["Sh'vat", "Sheḇaṭ"],
+		["Sivan", "Sivan"],
+		["Tamuz", "Tamuz"],
+		["Tevet", "Ṭeḇet"],
+		["Rosh Hashana", "Rosh Hashana"],
+		["Rosh Hashana I", "Rosh Hashana Yom I"],
+		["Rosh Hashana II", "Rosh Hashana Yom II"],
+		["Shabbat Chazon", "Shabbat Ḥazon"],
+		["Shabbat HaChodesh", "Shabbat HaḤoḏesh"],
+		["Shabbat HaGadol", "Shabbat Haggaḏol"],
+		["Shabbat Machar Chodesh", "Shabbat Maḥar Ḥoḏesh"],
+		["Shabbat Nachamu", "Shabbat Naḥamu"],
+		["Shabbat Parah", "Shabbat Para"],
+		["Shabbat Rosh Chodesh", "Shabbat Rosh Ḥoḏesh"],
+		["Shabbat Shekalim", "Shabbat Sheqalim"],
+		["Shabbat Shuva", "Shabbat Shuḇa"],
+		["Shabbat Zachor", "Shabbat Zakhor"],
+		["Shavuot", "Shaḇuʿot"],
+		["Shavuot I", "Shaḇuʿot Yom I"],
+		["Shavuot II", "Shaḇuʿot Yom II"],
+		["Shmini Atzeret", "Shemini ʿAṣeret"],
+		["Shushan Purim", "Shushan Purim"],
+		["Sigd", "Sigd"],
+		["Simchat Torah", "Simḥat Tora"],
+		["Sukkot", "Sukkot"],
+		["Sukkot I", "Sukkot Yom I"],
+		["Sukkot II", "Sukkot Yom II"],
+		["Sukkot II (CH''M)", "Sukkot (Ḥol HaMoʿḏ) Yom II"],
+		["Sukkot III (CH''M)", "Sukkot (Ḥol HaMoʿḏ) Yom III"],
+		["Sukkot IV (CH''M)", "Sukkot (Ḥol HaMoʿḏ) Yom IV"],
+		["Sukkot V (CH''M)", "Sukkot (Ḥol HaMoʿḏ) Yom V"],
+		["Sukkot VI (CH''M)", "Sukkot (Ḥol HaMoʿḏ) Yom VI"],
+		["Sukkot VII (Hoshana Raba)", "Sukkot (Hoshaʿna Rabba) Yom VII"],
+		["Ta'anit Bechorot", "Taʿanit Bekhorot"],
+		["Ta'anit Esther", "Taʿanit ʾEster"],
+		["Tish'a B'Av", "Tishʿa Beʾaḇ"],
+		["Tu B'Av", "Ṭu Beʾaḇ"],
+		["Tu BiShvat", "Ṭu Bishḇaṭ"],
+		["Tu B'Shvat", "Ṭu Bishḇaṭ"],
+		["Tzom Gedaliah", "Ṣom Geḏalya"],
+		["Tzom Tammuz", "Ṣom Tamuz"],
+		["Yom HaAtzma'ut", "Yom Haʿaṣmaʾut"],
+		["Yom HaShoah", "Yom Hashoʾa"],
+		["Yom HaZikaron", "Yom Hazzikkaron"],
+		["Yom Kippur", "Yom HakKippurim"],
+		["Yom Yerushalayim", "Yom Yerushalayim"],
+		["Yom HaAliyah", "Yom HaʿAliya"]
 	];
+	/*jshint quotmark: single*/
 
-	var i; // Reusable loop variable
-		input = input.replace(/\w\S*/g, function (txt) { return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase(); });
-		input = input.replace("'", "");
-		// console.log("Input: " + input);
-		for (i = 0; i < perashaList.length; i++) {
-			// console.log("Perasha List[i] = " + perashaList[i]);
-			// console.log("Perasha List[i][0] = " + perashaList[i][0]);
-			// note: for whatever reason, this continues to loop, even past getting the match
-			if (perashaList[i][0] == input) {
-				// console.log("Yes");
-				// console.log("ashkiToSeph (native): " + perashaList[i][1]);
-				// console.trace();
-				return (perashaList[i][1]);
+	input = input.replace(/\w\S*/g, function (txt) { return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase(); });
+	// Why is this second replace here?!?!?!
+	// It causes trouble for Beha'alotch et al.
+	// input = input.replace("'", "");
+
+	let res = [];
+	if (sel === 'p') {
+		perashaList.forEach((item) => {
+			// console.log(item[0]);
+			let same = (input === item[0]);
+			// console.log(same);
+			if (same) {
+				// console.log('Ashki, Seph:', item[0], ',', item[1]);
+				res.push(item[1]);
+				// console.log('p res', res);
 			}
-		}
-}
+		});
+	} else if (sel === 'h') {
+		holidayList.forEach((item) => {
+			// console.log(item[0]);
+			let same = (input === item[0]);
+			// console.log(same);
+			if (same) {
+				res.push[item[1]];
+				// console.log('h res', res);
+			}
+		});
+	}
 
+	let a2s = res;
+	return a2s;
+}
 
 /**
  * Requests location permission from user for HTML5 Geolocation API,
@@ -442,7 +583,6 @@ function ashkiToSeph(input, type) {
  * @return {(number|Array)} [lat, long] coordinates
  */
 function getLocation() {
-	// console.log("Started w/ getLocation");
 	var options = {
 		enableHighAccuracy: true,
 		maximumAge: 0
@@ -450,15 +590,11 @@ function getLocation() {
 
 	function error(err) {
 		console.warn(`ERROR(${err.code}): ${err.message}`);
-	zemannim.innerHtml = "Please enable location services to display the most up-to-date Zemannim";
-			// console.log("getLocation -> getAddrDetailsByIp");
-			// console.trace();
+	zemannim.innerHtml = 'Please enable location services to display the most up-to-date Zemannim';
 			getAddrDetailsByIp();
 	}
 
 	if (navigator.geolocation) {
-		// console.trace();
-		// console.log("Getting addr by geolocation");
 		navigator.geolocation.getCurrentPosition(getLatLngByGeo, error, options);
 		}
 }
@@ -470,27 +606,21 @@ function getLocation() {
  * @return {[type]}          [description]
  */
 function getLatLngByGeo(position) {
-	// console.log("getLatLngByGeo");
-	// console.log("Trace Test: ");
-	// console.trace();
-	var pos = position;
-	var lat = pos.coords.latitude;
-	var long = pos.coords.longitude;
+	let pos = position;
+	let lat = pos.coords.latitude;
+	let long = pos.coords.longitude;
 
 	getGeoDetails(lat, long);
 }
 
 /**
  * Parses JSON object from DB-IP API, and passes
- * lat, long, and city strings to timesHelper()
+ * lat, long, and city strings to hebCalShab()
  *
  * @since  1.3.1
  * @since  1.0.0
  */
 function getAddrDetailsByIp() {
-	/*jshint sub:true*/
-	// console.log("getAddrDetailsByIp");
-	// console.trace();
 	// Get the user's ip & location info
 	let urlStr = 'https://ipapi.co/json/';
 	fetch(urlStr)
@@ -499,43 +629,18 @@ function getAddrDetailsByIp() {
 		})
 		.then(function(res) {
 			// let ip = res["ip"];
-			let city = res["city"];
-			let state = res["region_code"];
+			let city = res.city;
+			let state = res.region_code;
 			// let country = res["country_name"];
-			let lat = res["latitude"];
-			let long = res["longitude"];
-			let tzid = res ["timezone"];
-			let cityStr = city + ", " + state;
+			let lat = res.latitude;
+			let long = res.longitude;
+			let tzid = res.timezone ;
+			// let cityStr = city + ', ' + state;
 
-			// console.log("getAddrDetailsByIp -> hebCalJS");
-			hebCalJS(city, lat, long, tzid);
-			console.log("Get Weekly Times");
-			timesHelper(lat, long, city);
-		});
-		/*jshint sub:false*/
-}
-
-
-/**
- * Extracts lat & long from passed urlStr, and
- * sends to Google Maps Geocoding API via getGeoDetails
- * @param  {string} urlStr [formatted string to plug into Google Maps API]
- * @since  1.0.0
- */
-function getLatLongByAddr(urlStr) {
-	// console.log("getLatLongByAddr");
-	let url = urlStr;
-	fetch(url)
-		.then((response) => {
-			return response.json();
-		})
-		.then((res) => {
-			let data = new Array(res.results[0]);
-			let lat = data[0].geometry.location.lat;
-			let long = data[0].geometry.location.lng;
-			getGeoDetails(lat, long);
+			hebCalShab(city, lat, long, tzid);
 		});
 }
+
 
 /**
  * Feeds lat & long coords into Google Maps API to obtain city and state info and
@@ -546,43 +651,61 @@ function getLatLongByAddr(urlStr) {
  * @return {[string]} cityStr [user's City, State]
  */
 function getGeoDetails(lat_crd, long_crd) {
-	// console.log("getGeoDetails");
 	let lat = lat_crd;
 	let long = long_crd;
+	let {cityStr, city, state} = '';
+
 	var point = new google.maps.LatLng(lat, long);        new google.maps.Geocoder().geocode({'latLng': point}, function (res, status) {
 
 		if (res[0]) {
-			for (var i = 0; i < res.length; i++) {
-				if (res[i].types[0] === "locality") {
-					var city = res[i].address_components[0].short_name;
+			for (let i = 0; i < res.length; i++) {
+				if (res[i].types[0] === 'locality') {
+					city = res[i].address_components[0].short_name;
 				} // end if loop 2
 
-				if (res[i].types[0] === "administrative_area_level_1") {
-					var state = res[i].address_components[0].short_name;
+				if (res[i].types[0] === 'administrative_area_level_1') {
+					state = res[i].address_components[0].short_name;
 				} // end if loop 2
 			} // end for loop
 		} // end if loop 1
 
 		if (null == state ) {
-			var cityStr = city;
+			cityStr = city;
 		} else {
-			var cityStr = city + ", " + state;
+			cityStr = city + ', ' + state;
 		}
 
-		let today = new Date.now();
-		console.log(today);
-		getTimeZone(lat, long, utc);
+		let rightNow = new Date();
+		let utc = convToUTC(rightNow);
 
-		// console.log("getGeoDetails -> timesHelper");
-		timesHelper(lat, long, cityStr);
+		getTimeZoneID(cityStr, lat, long, utc);
 	});
 }
 
+function convToUTC(dateObj) {
+	let time = dateObj;
+	time = time.toISOString();
+	time = Date.parse(time);
+	time = time.toString();
+	time = time.slice(0,10);
 
-function getTimeZone(lat,long, utc) {
-	let tzKey = AIzaSyAAZmyYbUxxG9R1CJGy34GxyOEAxO_ucrk;
-	let tzUrlStr = 'https://maps.googleapis.com/maps/api/timezone/json?location=' + lat + ',' + long + '&timestamp=' + utc + '&key=' + tzKey;
-	console.log("tzUrlStr:", tzUrlStr);
+	return time;
+}
+
+function getTimeZoneID(city, lat,long, utc) {
+	let tzKey = 'AIzaSyDgpmHtOYqSzG9JgJf98Isjno6YwVxCrEE';
+	let tzUrlBase = 'https://maps.googleapis.com/maps/api/timezone/json?location=';
+	let tzUrlStr = tzUrlBase + lat + ',' + long + '&timestamp=' + utc + '&key=' + tzKey;
+
+	fetch(tzUrlStr)
+		.then(function(response) {
+			return response.json();
+		})
+		.then(function(res) {
+			let tzid = res.timeZoneId;
+			hebCalShab(city, lat, long, tzid);
+		}
+	);
 
 }
 
@@ -593,9 +716,8 @@ function getTimeZone(lat,long, utc) {
  * @return {int}   1-digit version of int `x` that was passed in
  */
 function formatTime(x) {
-	// console.log("formatTime");
 	var reformattedTime = x.toString();
-	reformattedTime = ("0" + x).slice(-2);
+	reformattedTime = ('0' + x).slice(-2);
 	return reformattedTime;
 }
 
@@ -605,54 +727,27 @@ function formatTime(x) {
  * @return {string}   Time String in Y-M-D-H-M
  */
 function generateSunStrings(timeObj) {
-	// console.log("generateSunStrings");
-	var year = timeObj.getFullYear();
-	var month = formatTime(timeObj.getMonth() + 1);
-	var day = formatTime(timeObj.getDate());
-	var hour = formatTime(timeObj.getHours());
-	var min = formatTime(timeObj.getMinutes());
-	var sec = formatTime(timeObj.getSeconds());
-	var buildTimeStr = year + "-" + month + "-" + day + " " + hour + ":" + min;
+	let year = timeObj.getFullYear();
+	let month = formatTime(timeObj.getMonth() + 1);
+	let day = formatTime(timeObj.getDate());
+	let hour = formatTime(timeObj.getHours());
+	let min = formatTime(timeObj.getMinutes());
+	// let sec = formatTime(timeObj.getSeconds());
+	let buildTimeStr = year + '-' + month + '-' + day + ' ' + hour + ':' + min;
 	return buildTimeStr;
 }
 
-/**
- * Helper function for generateTimeStrings
- * @param  {object} timeObj Time oject used to build a date string
- * @see generateTimeStrings()
- * @return {string}   The Date in a string
- */
-function generateDateString(timeObj) {
-	// console.log("generateDateString");
-	var monthInt = timeObj.getMonth();
-	var monthList = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-	var month = monthList[monthInt];
-	var day = formatTime(timeObj.getDate());
-	var year = timeObj.getFullYear();
-	var buildDateStr = '<span id="zemanin_date">' + "Times for " + month + " " + day + ", " + year + '</span>';
-	return buildDateStr;
-}
-
-/* Will likely deprecate, since I can do this part with hebCalJS
+/* Will likely deprecate, since I can do this part with hebCalShab
 		May still need for Min7a, Peleg, Shema, et al
 */
-function timesHelper(lat, long, city) {
-	var cityStr = city;
-	var todayTimesObj = SunCalc.getTimes(new Date(), lat, long);
-	// var shabbatFeed = '<?php // echo( esc_html( "$dates[4]" ) ); ?>';
-	// var shabbatHelperStr = shabbatFeed.substr(0, 19);
-	// var shabbatHelper = new Date(shabbatHelperStr);
-	// var shabbatTimesObj = SunCalc.getTimes(new Date(shabbatHelperStr), lat, long);
-	var todayTimes = calculateTimes(todayTimesObj, false);
-	// var shabbatTimes = calculateTimes(shabbatTimesObj, true);
-	var todayStrSet = generateTimeStrings(todayTimes, false);
-	// var shabbatStrSet = generateTimeStrings(shabbatTimes, true);
+function timesHelper(lat, long) {
+	let todayTimesObj = SunCalc.getTimes(new Date(), lat, long);
+	let todayTimes = calculateSunTimes(todayTimesObj, false);
+	let todayStrSet = generateTimeStrings(todayTimes, false);
 
-	// console.log("timesHelper -> displayTimes");
-	displayTimes(todayStrSet, cityStr);
-	// console.log("timesHelper -> displayShabbatTimes");
-	// displayShabbatTimes(shabbatStrSet, cityStr);
+	return todayStrSet;
 }
+
 
 /**
  * Splits time object into year, month, day, hour, min, sec and returns buildTimeStr
@@ -660,27 +755,26 @@ function timesHelper(lat, long, city) {
  * @return {string}   Time String in Y-M-D-H-M
  */
 function generateTimeStrings(timeSet, shabbat) {
-	// console.log("generateTimeStrings");
-	var sunrise = timeSet[0];
-	var sunset = timeSet[1];
-	var offSet = timeSet[2];
-	var sunsetDateTimeInt = timeSet[3];
+	let sunrise = timeSet[0];
+	let sunset = timeSet[1];
+	let offSet = timeSet[2];
+	let sunsetDateTimeInt = timeSet[3];
 
-	var latestShemaStr = '<span id="zemannim_shema">Latest Shema: </span>' + calculateLatestShema(sunrise, sunset, offSet);
-	var earliestMinhaStr = '<span id="zemannim_minha">Earliest Minḥa: </span>' + calculateEarliestMinha(sunrise, sunset, offSet);
-	var pelegHaMinhaStr = '<span id="zemannim_peleg">Peleḡ HaMinḥa: </span>' + calculatePelegHaMinha(sunrise, sunset, offSet);
-	var sunsetStr = '<span id="zemannim_sunset">Sunset: </span>' + unixTimestampToDate(sunsetDateTimeInt + offSet);
+	let latestShemaStr = '<span id="zemannim_shema">Latest Shema: </span>' + calculateLatestShema(sunrise, sunset, offSet);
+	let earliestMinhaStr = '<span id="zemannim_minha">Earliest Minḥa: </span>' + calculateEarliestMinha(sunrise, sunset, offSet);
+	let pelegHaMinhaStr = '<span id="zemannim_peleg">Peleḡ HaMinḥa: </span>' + calculatePelegHaMinha(sunrise, sunset, offSet);
+	let sunsetStr = '<span id="zemannim_sunset">Sunset: </span>' + unixTimestampToDate(sunsetDateTimeInt + offSet);
 
 	if (shabbat) {
-		var candleLighting = timeSet[4];
-		var habdala = timeSet[5];
-		var candleLightingStr = '<span id="zemannim_habdala">Candle Lighting (18 min): </span>' + unixTimestampToDate(candleLighting + offSet);
-		var habdalaStr = '<span id="zemannim_habdala">Haḇdala (20 min): </span>' + unixTimestampToDate(habdala + offSet);
-		var shabbatSet = [sunsetStr, candleLightingStr, habdalaStr];
+		let candleLighting = timeSet[4];
+		let habdala = timeSet[5];
+		let candleLightingStr = '<span id="zemannim_habdala">Candle Lighting (18 min): </span>' + unixTimestampToDate(candleLighting + offSet);
+		let habdalaStr = '<span id="zemannim_habdala">Haḇdala (20 min): </span>' + unixTimestampToDate(habdala + offSet);
+		let shabbatSet = [sunsetStr, candleLightingStr, habdalaStr];
 
 		return shabbatSet;
 	} else {
-		var todaySet = [latestShemaStr, earliestMinhaStr, pelegHaMinhaStr, sunsetStr];
+		let todaySet = [latestShemaStr, earliestMinhaStr, pelegHaMinhaStr, sunsetStr];
 
 		return todaySet;
 	}
@@ -688,38 +782,25 @@ function generateTimeStrings(timeSet, shabbat) {
 }
 
 /**
- * [calculateTimes description]
+ * [calculateSunTimes description]
  * @param  {array} timeObj  Contains soon-to-be manupulated time data
  * @param  {boolean} shabbat Determines whether we are calculate times for Shabbath or weekday
  * @return {array}         An array of time value integers
  */
-function calculateTimes(timeObj, shabbat) {
-	// console.log("calculateTimes");
-	var times = timeObj;
-	var sunriseObj = times.sunrise;
-	var offSet = sunriseObj.getTimezoneOffset() / 60;
-	var offSetSec = offSet * 3600;
-	var sunriseStr = generateSunStrings(sunriseObj);
-	var sunsetObj = times.sunset;
-	var sunsetStr = generateSunStrings(sunsetObj);
-	// console.log(times, sunriseObj, offSet, offSetSec, sunriseStr, sunsetObj, sunsetStr);
-	var SunriseDateTimeInt = parseFloat((new Date(sunriseStr).getTime() / 1000) - offSetSec);
-	var sunsetDateTimeInt = parseFloat((new Date(sunsetStr).getTime() / 1000) - offSetSec);
-	var sunriseSec = SunriseDateTimeInt - offSet;
-	var sunsetSec = sunsetDateTimeInt - offSet;
+function calculateSunTimes(timeObj, shabbat) {
+	let times = timeObj;
+	let sunriseObj = times.sunrise;
+	let offSet = sunriseObj.getTimezoneOffset() / 60;
+	let offSetSec = offSet * 3600;
+	let sunriseStr = generateSunStrings(sunriseObj);
+	let sunsetObj = times.sunset;
+	let sunsetStr = generateSunStrings(sunsetObj);
+	let SunriseDateTimeInt = parseFloat((new Date(sunriseStr).getTime() / 1000) - offSetSec);
+	let sunsetDateTimeInt = parseFloat((new Date(sunsetStr).getTime() / 1000) - offSetSec);
+	let sunriseSec = SunriseDateTimeInt - offSet;
+	let sunsetSec = sunsetDateTimeInt - offSet;
 
-	// if (shabbat) {
-	// 	var candleLightingOffset = 1080;
-	// 	var habdalaOffSet = 1200;
-	// 	var candleLightingSec = sunsetDateTimeInt - candleLightingOffset;
-	// 	var habdalaSec = sunsetDateTimeInt + habdalaOffSet;
-
-	// 	var timeSet = [sunriseSec, sunsetSec, offSetSec, sunsetDateTimeInt, candleLightingSec, habdalaSec];
-	// } else {
-	// 	var timeSet = [sunriseSec, sunsetSec, offSetSec, sunsetDateTimeInt];
-	// }
-
-	var timeSet = [sunriseSec, sunsetSec, offSetSec, sunsetDateTimeInt];
+	let timeSet = [sunriseSec, sunsetSec, offSetSec, sunsetDateTimeInt];
 	return timeSet;
 }
 
@@ -732,18 +813,18 @@ function calculateTimes(timeObj, shabbat) {
 function unixTimestampToDate(timestamp) {
 	var date = new Date(timestamp * 1000);
 	var hours = date.getHours();
-	var ampm = "AM";
-	var minutes = "0" + date.getMinutes();
+	var ampm = 'AM';
+	var minutes = '0' + date.getMinutes();
 
 	if (hours > 12) {
 		hours -= 12;
-		ampm = "PM";
+		ampm = 'PM';
 	}
 	else if (hours === 0) {
 		hours = 12;
 	}
 	var formattedTime = hours + ':' + minutes.substr(-2);
-	return formattedTime + " " + ampm;
+	return formattedTime + ' ' + ampm;
 }
 
 /**
@@ -756,7 +837,6 @@ function unixTimestampToDate(timestamp) {
  * @since  1.0.0
  */
 function calculateLatestShema(sunriseSec, sunsetSec, offSetSec) {
-	// console.log("calculateLatestShema");
 	var halakhicHour = Math.abs((sunsetSec - sunriseSec) / 12);
 	var shemaInSeconds = sunriseSec + (halakhicHour * 3) + offSetSec;
 	var latestShema = unixTimestampToDate(shemaInSeconds);
@@ -773,7 +853,6 @@ function calculateLatestShema(sunriseSec, sunsetSec, offSetSec) {
  * @see unixTimestampToDate
  */
 function calculateEarliestMinha(sunriseSec, sunsetSec, offSetSec) {
-	// console.log("calculateEarliestMinha");
 	var halakhicHour = (sunsetSec - sunriseSec) / 12;
 	var minhaInSeconds = sunriseSec + (halakhicHour * 6.5) + offSetSec;
 	var earliestMinha = unixTimestampToDate(minhaInSeconds);
@@ -790,7 +869,6 @@ function calculateEarliestMinha(sunriseSec, sunsetSec, offSetSec) {
  * @see unixTimestampToDate
  */
 function calculatePelegHaMinha(sunriseSec, sunsetSec, offSetSec) {
-	// console.log("calculatePelegHaMinha");
 	var halakhicHour = (sunsetSec - sunriseSec) / 12;
 	var minhaInSeconds = sunsetSec - (halakhicHour * 1.25) + offSetSec;
 	var pelegHaMinha = unixTimestampToDate(minhaInSeconds);
@@ -809,51 +887,38 @@ function calculatePelegHaMinha(sunriseSec, sunsetSec, offSetSec) {
  * @param  {string} sunset Time of Sunset
  * @since  1.0.0
  */
-function displayTimes(timeSet, city) {
-	var city = city;
-	var shema = timeSet[0];
-	var minha = timeSet[1];
-	var peleg = timeSet[2];
-	var sunset = timeSet[3];
+function displayTimes(todaySet, shabbatSet, city, date) {
+	/* Weekday */
+	let shema = todaySet[0];
+	let minha = todaySet[1];
+	let peleg = todaySet[2];
+	let sunset = todaySet[3];
 
-	// z_date.innerHTML = date + "<br>";
-	z_city.innerHTML = city + "<br>";
-	z_shema.innerHTML = shema + "<br>";
-	z_minha.innerHTML = minha + "<br>";
-	z_peleg.innerHTML = peleg + "<br>";
-	z_sunset.innerHTML = sunset + "<br>";
-}
+	z_date.innerHTML = date + '<br>';
+	z_city.innerHTML = city + '<br>';
+	z_shema.innerHTML = shema + '<br>';
+	z_minha.innerHTML = minha + '<br>';
+	z_peleg.innerHTML = peleg + '<br>';
+	z_sunset.innerHTML = sunset + '<br>';
 
-/**
- * Generates HTML output for display of Shabbath Times
- * @since  1.2.0
- *
- * @param  {array} timeSet an array containing
- * sunset, candle lighting, and habdala information
- * @param  {string} city    Name of the user's city
- * @return {[type]}         [description]
- */
-function displayShabbatTimes(timeSet, cityStr) {
-	// console.trace();
-	// var city = city;
-	let date = timeSet[0];
+	/* Shabbath */
+	let sh_engdate = shabbatSet[0];
+	let sh_perasha_en = shabbatSet[1];
 	// let city = cityStr;
-	let hebDate = timeSet[1];
-	let perashaHeb = timeSet[2];
-	let perashaEng = timeSet[3];
-	let candles = timeSet[4];
-	let sunset = timeSet[5];
-	// console.log(sunset);
-	let habdala = timeSet[6];
-	// sz_city.innerHTML = city + "<br>";
-	sz_date.innerHTML = date + "<br>";
-	sz_date_heb.innerHTML = hebDate + "<br>";
-	sz_perasha.innerHTML = perashaEng + "<br>";
-	sz_perasha_heb.innerHTML = perashaHeb + "<br>";
-	sz_candles.innerHTML = candles + "<br>";
-	sz_sunset.innerHTML = sunset + "<br>";
-	sz_habdala.innerHTML = habdala + "<br>";
+	let sh_hebdate = shabbatSet[2];
+	let sh_perasha_he = shabbatSet[3];
+	let sh_candles = shabbatSet[4];
+	let sh_sunset = shabbatSet[5];
+	let sh_habdala = shabbatSet[6];
 
+	// sz_city.innerHTML = city + '<br>';
+	sz_date.innerHTML = sh_engdate + '<br>';
+	sz_perasha.innerHTML = sh_perasha_en + '<br>';
+	sz_date_heb.innerHTML = sh_hebdate + '<br>';
+	sz_perasha_heb.innerHTML = sh_perasha_he + '<br>';
+	sz_candles.innerHTML = sh_candles + '<br>';
+	sz_sunset.innerHTML = sh_sunset + '<br>';
+	sz_habdala.innerHTML = sh_habdala + '<br>';
 }
 
 
@@ -865,9 +930,7 @@ function displayShabbatTimes(timeSet, cityStr) {
 </script>
 
 		<?php
-		// phpcs:disable
 		echo $args['after_widget'];
-		// phpcs:enable
 
 	} // public function widget ends here.
 
@@ -887,7 +950,6 @@ function displayShabbatTimes(timeSet, cityStr) {
 		}
 
 		// Widget admin form.
-		// phpcs:disable
 		?>
 	<p>
 		<label for="<?php echo( esc_attr( $this->get_field_id( 'title' ) ) ); ?>"><?php _e( 'Title:' ); ?></label>
@@ -895,7 +957,6 @@ function displayShabbatTimes(timeSet, cityStr) {
 	</p>
 
 		<?php
-		// phpcs:enable
 	}
 
 
