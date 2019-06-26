@@ -1,6 +1,6 @@
 # Daily Zemannim Plugin
 
-A widget that calculates and displays prayer times, dates of fasts and holidays, and the weekly torah portion, according to halakha (Jewish Law). This plugin is a rewrite and extension of the [Daily Zman Widget](https://wordpress.org/plugins/daily-zman-widget/) by [Adato Systems](http://www.adatosystems.com/)
+A widget that calculates and displays prayer times, dates of fasts and holidays, and the weekly torah portion, according to halakha (Jewish Law). This plugin started as a rewrite and extension of the [Daily Zman Widget](https://wordpress.org/plugins/daily-zman-widget/) by [Adato Systems](http://www.adatosystems.com/)
 
 The plugin works by pulling the user's location, either by the HTML5 Geolocation API or by inputting the user's IP (retrieved from browser headers) into the DB-IP - IP Geolocation API. From there it extracts the user's longitude and latitude, and feeds that into the Google Maps Geocoding API, to obtain the user's city, state, and country.
 
@@ -16,6 +16,10 @@ Once this is done, it checks for Daylight Saving Times, and then uses a Javascri
 <!-- * [DB-IP - IP Geolocation API](https://db-ip.com/api/) -->
 
 ## Changelog
+
+### [1.4] - 2019-06-23
+* Fix bug in `ashkiToSeph()` function, and other related parsing issues.
+* Integrate into main [haSepharadi](https://github.com/lunacodes/hasepharadi) repo
 
 ### [1.3.4] - 2019-03-28
 Consolidates and removes redundant functions. Improves code logic.
@@ -74,8 +78,7 @@ Consolidates and removes redundant functions. Improves code logic.
 
 ## Future
 * Increase wp-admin options for customization
-* Merge redundant logic in the hebcal getter functions
-* Display Holidays, in addition to Shabbath
+* Update HebCal parsing logic to avoid functions breaking on weeks with holidays.
 
 ### Known Issues
 * getGeoDetails: Needs an additional `for loop` in order to avoid `var state` defaulting to null.
