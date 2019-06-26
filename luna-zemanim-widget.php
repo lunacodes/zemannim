@@ -222,7 +222,6 @@ function getCandleTimes(data, date) {
 			// console.log('candles item:', item, item.category);
 			candlesList.push(item);
 		}
-<<<<<<< HEAD
 	});
 	return candlesList[0];
 }
@@ -261,46 +260,6 @@ function getPerasha(data, date) {
 			return perashaList[0];
 		}
 	});
-=======
-	});
-	return candlesList[0];
-}
-
-function getHebDate(data, date) {
-	// console.log('getCandleTimes data date:', data, date);
-	let hebDatesList = [];
-	const d1 = new Date(date);
-
-	data.forEach((item) => {
-		let d2 = new Date(item.date);
-		let same = d1.getDate() === d2.getDate();
-		// console.log(same);
-
-		if ((item.category === 'hebdate') && same) {
-			hebDatesList.push(item);
-			// console.log('hebDatesList', hebDatesList);
-			}
-		});
-	return hebDatesList[0].hebrew;
-}
-
-function getPerasha(data, date) {
-	let perashaList = [];
-	const d1 = new Date(date);
-
-	data.forEach((item) => {
-		let d2 = new Date(item.date);
-		let same = (d1.getDate() -1) === (d2.getDate());
-
-		// console.log(item.category);
-		if ((item.category === 'parashat') && same ) {
-			// console.log('success', item);
-			perashaList.push(item);
-			// console.log('p2', perashaList);
-			return perashaList[0];
-		}
-	});
->>>>>>> d9381e88957e7a9fbb3f480b71e08129bbb97237
 	return perashaList[0];
 }
 
@@ -343,7 +302,6 @@ function hebCalGetSunset(timestr) {
 		time = hr + ':' + min;
 		return time;
 }
-<<<<<<< HEAD
 
 function getDaysInMonth(month, year) {
 	return new Date(year, month, 0).getDate();
@@ -391,42 +349,6 @@ function hebCalShab(cityStr, lat, long, tzid) {
 			let engdate = 'Shabbat Times for ' + dateStr;
 			let hebdate = getHebDate(data, fri);
 
-=======
-
-function hebCalShab(cityStr, lat, long, tzid) {
-	const now = new Date();
-	let month = now.getMonth() + 1;
-
-	let urlStr = 'https://www.hebcal.com/hebcal/?v=1&cfg=json&maj=on&min=on&nx=on&ss=on&mod=off&s=on&c=on&m=20&b=18&o=on&D=on&year=now&month=' + month + '&i=off&geo=pos' + '&latitude=' + lat + '&longitude=' + long + '&tzid=' + tzid;
-	// console.log("hebCalShab urlStr", urlStr);
-
-	// Talk to Hebcal API
-	fetch(urlStr)
-		.then(function(response) {
-			return response.json();
-		})
-		.then(function(res) {
-			// console.log(res);
-			let data = res.items;
-			// console.log(data);
-
-			// Today's Data
-			let today = now.toLocaleString('en-us', { month: 'long', day: 'numeric', year: 'numeric' });
-			let todayStr = 'Times for ' + today;
-			let todayNum = now.getDay();
-			let todayDate = now.getDate();
-
-			/* Shabbath Section */
-			let shabbatDate = getShabbatDate(todayNum, todayDate);
-			let fri = shabbatDate[0];
-			let sat = shabbatDate[1];
-
-			// Shabbath Strings
-			let dateStr = fri.toLocaleString('en-us', { month: 'long', day: 'numeric', year: 'numeric' });
-			let engdate = 'Shabbat Times for ' + dateStr;
-			let hebdate = getHebDate(data, fri);
-
->>>>>>> d9381e88957e7a9fbb3f480b71e08129bbb97237
 			// Candles & Sunset
 			let candlesData = getCandleTimes(data, fri);
 			let candles = candlesData.title;
@@ -441,13 +363,9 @@ function hebCalShab(cityStr, lat, long, tzid) {
 
 			// Perasha Info
 			let perasha = getPerasha(data, sat);
-<<<<<<< HEAD
 			// console.log('getPerasha returned:', perasha)
 			let perashaHeb = perasha.hebrew;
 			// console.log('perasha.title:', perasha.title)
-=======
-			let perashaHeb = perasha.hebrew;
->>>>>>> d9381e88957e7a9fbb3f480b71e08129bbb97237
 			let perashaEng = perasha.title;
 			let phIndex = perashaHeb.indexOf('ת') + 1;
 			perashaHeb = 'פרשה' + perashaHeb.slice(phIndex);
@@ -627,13 +545,9 @@ function ashkiToSeph(input, sel) {
 	/*jshint quotmark: single*/
 
 	input = input.replace(/\w\S*/g, function (txt) { return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase(); });
-<<<<<<< HEAD
 	// Why is this second replace here?!?!?!
 	// It causes trouble for Beha'alotch et al.
 	// input = input.replace("'", "");
-=======
-	input = input.replace("'", "");
->>>>>>> d9381e88957e7a9fbb3f480b71e08129bbb97237
 
 	let res = [];
 	if (sel === 'p') {
@@ -774,17 +688,10 @@ function convToUTC(dateObj) {
 	time = Date.parse(time);
 	time = time.toString();
 	time = time.slice(0,10);
-<<<<<<< HEAD
 
 	return time;
 }
 
-=======
-
-	return time;
-}
-
->>>>>>> d9381e88957e7a9fbb3f480b71e08129bbb97237
 function getTimeZoneID(city, lat,long, utc) {
 	let tzKey = 'AIzaSyDgpmHtOYqSzG9JgJf98Isjno6YwVxCrEE';
 	let tzUrlBase = 'https://maps.googleapis.com/maps/api/timezone/json?location=';
