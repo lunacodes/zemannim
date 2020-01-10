@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name: Daily Zemanim With Hebcal
+ * Plugin Name: Daily Zemannim by lunacodes
  * Plugin URI: https://lunacodesdesign.com/
  * Description: Displays Zemannim (times) according to Sepharadic tradition.
  *   Uses the DB-IP API and the Google Maps API for geographic information.
