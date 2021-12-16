@@ -16,6 +16,12 @@ var sz_candles = document.getElementById('shzm_candles');
 var sz_sunset = document.getElementById('shzm_sunset');
 var sz_habdala = document.getElementById('shzm_habdala');
 
+/**
+ * Calculates the upcoming Shabbat's date, by determining the next Friday and Saturday
+ * @param  {number} dayNum             The number day of the week
+ * @param  {Date obj} dayDate       Today's date
+ * @return {array.<Object>}         Array containing the start and endtime for Shabbat
+ */
 function getShabbatDate(dayNum, dayDate) {
   if (dayNum < 7) {
     var i = 7 - dayNum;
@@ -25,49 +31,60 @@ function getShabbatDate(dayNum, dayDate) {
 
     fri.setDate(dateMod - 2);
     sat.setDate(dateMod - 1);
-    // console.log('fri, sat', fri, sat);
 
     return [fri, sat];
   }
 }
 
-function getCandvarimes(data, date) {
-  // console.log('getCandvarimes data date:', data, date);
+/**
+ * Calculates candle lighting time
+ * @param  {Object} data  Hebcal JSON data
+ * @param  {Object} date  Date object with Friday's date
+ * @return {string}        String representation of Friday's date.
+ * Used for title, and for Sunset time calculations
+ * (e.g. Shabbat Times for December 17, 2021)
+ */
+function getCandleTimes(data, date) {
   var candlesList = [];
   const d1 = new Date(date);
 
   data.forEach((item) => {
     var d2 = new Date(item.date);
-    // console.log('d1, d2', d1, d2);
     var same = d1.getDate() === d2.getDate();
-    // console.log(same);
 
     if ((item.category === 'candles') && same) {
-      // console.log('candles item:', item, item.category);
       candlesList.push(item);
     }
   });
   return candlesList[0];
 }
 
+/**
+ * Get Shabbat's date in Hebrew
+ * @param  {Object} data  Hebcal JSON data
+ * @param  {Object} date  Date object with Friday's date
+ * @return {string}       Friday's Hebrew date
+ */
 function getHebDate(data, date) {
-  // console.log('getCandvarimes data date:', data, date);
   var hebDatesList = [];
   const d1 = new Date(date);
 
   data.forEach((item) => {
     var d2 = new Date(item.date);
     var same = d1.getDate() === d2.getDate();
-    // console.log(same);
 
     if ((item.category === 'hebdate') && same) {
       hebDatesList.push(item);
-      // console.log('hebDatesList', hebDatesList);
       }
     });
   return hebDatesList[0].hebrew;
 }
-
+/**
+ * Calculates the perasha's date in English
+ * @param  {Object} data  Hebcal JSON info
+ * @param  {Object} date  Saturday's date
+ * @return {string}       Perasha's date in English
+ */
 function getPerasha(data, date) {
   var perashaList = [];
   const d1 = new Date(date);
@@ -76,17 +93,20 @@ function getPerasha(data, date) {
     var d2 = new Date(item.date);
     var same = (d1.getDate() -1) === (d2.getDate());
 
-    // console.log(item.category);
     if ((item.category === 'parashat') && same ) {
-      // console.log('success', item);
       perashaList.push(item);
-      // console.log('p2', perashaList);
       return perashaList[0];
     }
   });
   return perashaList[0];
 }
 
+/**
+ * Calculate the time for Habdala
+ * @param  {Object} data Hebcal JSON Object
+ * @param  {Object} date Saturday's Date
+ * @return {Array}      Habdala date's info from Hebcal
+ */
 function getHabdalaTimes(data, date) {
   var habdalaTimes = [];
   const d1 = new Date(date);
@@ -94,20 +114,21 @@ function getHabdalaTimes(data, date) {
   data.forEach((item) => {
     var d2 = new Date(item.date);
     var same = d1.getDate() === d2.getDate();
-    // console.log(same);
 
     if ((item.category === 'havdalah') && same) {
-      // console.log(item.category);
       habdalaTimes.push(item);
-      // console.log(habdalaTimes);
     }
   });
   return habdalaTimes;
 }
 
+/**
+ * Calculate's Friday's sunset time
+ * @param  {string} timestr  Date string for Friday's date
+ * @return {string}          Friday's sunset time
+ */
 function hebCalGetSunset(timestr) {
     var str = timestr;
-    // var index = str.indexOf(':') + 2;
     var time = str.replace(/\D/g,'');
     var hr = time.slice(0,1);
     var min = time.slice(-2);
@@ -127,25 +148,41 @@ function hebCalGetSunset(timestr) {
     return time;
 }
 
+/**
+ * Helper function for hebCalShabbat to help determine whether today's the last day of the month
+ * @param  {number} month  current month number
+ * @param  {number} year   current year number
+ * @return {Date}       number of days in the month
+ *
+ * WARNING 12/16/2021: the year param currently gets its data from the deprecated Date.getYear()
+ * method in hebCalShab() function. Replace with Date.getFullYear()
+ */
 function getDaysInMonth(month, year) {
   return new Date(year, month, 0).getDate();
 }
 
+/**
+ * Fetches Hebcal JSON data to use in time calculations, and generates strings
+ * for dates and times. The input variables are generated
+ * by getAddrDetailsByIp, or getGeoDetails and getTimeZoneID
+ * @param  {string} cityStr  User's city, calculated either via GPS or IP
+ * @param  {number} lat        User's latitude
+ * @param  {int} long     User's longitude
+ * @param  {str} tzid     User's timezone ID
+ */
 function hebCalShab(cityStr, lat, long, tzid) {
   const now = new Date();
   var month = now.getMonth() + 1;
   var year = now.getYear();
   var daysInMonth = getDaysInMonth(month, year);
-  // tmpDayNum may be redundant w/ todayNum - doublecheck later
+
+  // If today's the last day of the month, advance to next month
   var tmpDayNum = now.getDate();
   if ( daysInMonth === tmpDayNum ) {
     month = month + 1;
   }
-  // console.log(now);
-  // console.log("m, y, dim, tdn", month, year, daysInMonth, tmpDayNum);
 
   var urlStr = 'https://www.hebcal.com/hebcal/?v=1&cfg=json&maj=on&min=on&nx=on&ss=on&mod=off&s=on&c=on&m=20&b=18&o=on&D=on&year=now&month=' + month + '&i=off&geo=pos' + '&latitude=' + lat + '&longitude=' + long + '&tzid=' + tzid;
-  // console.log("hebCalShab urlStr", urlStr);
 
   // Talk to Hebcal API
   fetch(urlStr)
@@ -153,17 +190,16 @@ function hebCalShab(cityStr, lat, long, tzid) {
       return response.json();
     })
     .then(function(res) {
-      // console.log(res);
       var data = res.items;
-      // console.log(data);
 
+      // Store Hebcal times to use for calculations and formatting
       // Today's Data
       var today = now.toLocaleString('en-us', { month: 'long', day: 'numeric', year: 'numeric' });
       var todayStr = 'Times for ' + today;
       var todayNum = now.getDay();
       var todayDate = now.getDate();
 
-      /* Shabbath Section */
+			// Shabbath Section
       var shabbatDate = getShabbatDate(todayNum, todayDate);
       var fri = shabbatDate[0];
       var sat = shabbatDate[1];
@@ -174,7 +210,7 @@ function hebCalShab(cityStr, lat, long, tzid) {
       var hebdate = getHebDate(data, fri);
 
       // Candles & Sunset
-      var candlesData = getCandvarimes(data, fri);
+      var candlesData = getCandleTimes(data, fri);
       var candles = candlesData.title;
       var sunset = hebCalGetSunset(candles);
       sunset = 'Sunset: ' + sunset;
@@ -187,9 +223,7 @@ function hebCalShab(cityStr, lat, long, tzid) {
 
       // Perasha Info
       var perasha = getPerasha(data, sat);
-      // console.log('getPerasha returned:', perasha)
       var perashaHeb = perasha.hebrew;
-      // console.log('perasha.title:', perasha.title)
       var perashaEng = perasha.title;
       var phIndex = perashaHeb.indexOf('ת') + 1;
       perashaHeb = 'פרשה' + perashaHeb.slice(phIndex);
@@ -199,7 +233,6 @@ function hebCalShab(cityStr, lat, long, tzid) {
       var firstSpace=str.indexOf(' ');
       var perashaShort= str.slice(firstSpace + 1);
       var a2s = ashkiToSeph(perashaShort, 'p');
-      // var a2sTest = ashkiToSeph("Asara B'Tevet", 'p');
       perashaEng = 'Perasha ' + a2s;
 
       var shabbatSet = [engdate, perashaEng, hebdate, perashaHeb, candles, sunset, habdala];
@@ -209,8 +242,13 @@ function hebCalShab(cityStr, lat, long, tzid) {
   });
 }
 
+/**
+ * Converts perasha and holiday names from Ashkenazi to Sepharadi transliteration
+ * @param  {string} input  Name of perasha from Hebcal info
+ * @param  {string} sel    Determines if we're parsing Perashiyoth or Holidays
+ * @return {string}        Transliterated perasha or holiday name
+ */
 function ashkiToSeph(input, sel) {
-  /* jshint quotmark: double */
   var perashaList = [
     ["Parashat", "Perasha"],
     ["Achrei Mot", "ʾAḥare Mot"],
@@ -366,33 +404,22 @@ function ashkiToSeph(input, sel) {
     ["Yom Yerushalayim", "Yom Yerushalayim"],
     ["Yom HaAliyah", "Yom HaʿAliya"]
   ];
-  /*jshint quotmark: single*/
 
   input = input.replace(/\w\S*/g, function (txt) { return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase(); });
-  // Why is this second replace here?!?!?!
-  // It causes trouble for Beha'alotch et al.
-  // input = input.replace("'", "");
 
   var res = [];
   if (sel === 'p') {
     perashaList.forEach((item) => {
-      // console.log(item[0]);
       var same = (input === item[0]);
-      // console.log(same);
       if (same) {
-        // console.log('Ashki, Seph:', item[0], ',', item[1]);
         res.push(item[1]);
-        // console.log('p res', res);
       }
     });
   } else if (sel === 'h') {
     holidayList.forEach((item) => {
-      // console.log(item[0]);
       var same = (input === item[0]);
-      // console.log(same);
       if (same) {
         res.push[item[1]];
-        // console.log('h res', res);
       }
     });
   }
@@ -403,8 +430,7 @@ function ashkiToSeph(input, sel) {
 
 /**
  * Requests location permission from user for HTML5 Geolocation API,
- * and routes it to the relevant function.
- * @return {(number|Array)} [lat, long] coordinates
+ * and routes further calculations to use either Google Maps API or ipapi API.
  */
 function getLocation() {
   var options = {
@@ -418,16 +444,17 @@ function getLocation() {
       getAddrDetailsByIp();
   }
 
+  // If HTML 5 Geolocation permission enabled
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(getLatLngByGeo, error, options);
     }
 }
 
 /**
- * getLatLngByGeo - separate [lat, long] into lat & long vars, pass to Google Maps API via getGeoDetails
+ * Separates [lat, long] from Geolocation data into lat & long vars
+ * to pass to Google Maps API via getGeoDetails
  * @since  1.0.0
- * @param  {number|Array} position [lat, long]
- * @return {[type]}          [description]
+ * @param  {number|Array} position [lat, long] coordinate integers
  */
 function getLatLngByGeo(position) {
   var pos = position;
@@ -452,14 +479,11 @@ function getAddrDetailsByIp() {
       return response.json();
     })
     .then(function(res) {
-      // var ip = res["ip"];
       var city = res.city;
       var state = res.region_code;
-      // var country = res["country_name"];
       var lat = res.latitude;
       var long = res.longitude;
       var tzid = res.timezone ;
-      // var cityStr = city + ', ' + state;
 
       hebCalShab(city, lat, long, tzid);
     });
@@ -470,9 +494,9 @@ function getAddrDetailsByIp() {
  * Feeds lat & long coords into Google Maps API to obtain city and state info and
  * pass to generateTimes()
  *
- * @param  {[float]} lat_crd  [user's lattitude]
- * @param  {[float]} long_crd [user's longitude]
- * @return {[string]} cityStr [user's City, State]
+ * @param  {float} lat_crd  User's lattitude coordinates
+ * @param  {float} long_crd User's longitude coordinates
+ * @return {string} cityStr User's City, State
  */
 function getGeoDetails(lat_crd, long_crd) {
   var lat = lat_crd;
@@ -485,13 +509,13 @@ function getGeoDetails(lat_crd, long_crd) {
       for (var i = 0; i < res.length; i++) {
         if (res[i].types[0] === 'locality') {
           city = res[i].address_components[0].short_name;
-        } // end if loop 2
+        }
 
         if (res[i].types[0] === 'administrative_area_level_1') {
           state = res[i].address_components[0].short_name;
-        } // end if loop 2
-      } // end for loop
-    } // end if loop 1
+        }
+      }
+    }
 
     if (null == state ) {
       cityStr = city;
@@ -506,6 +530,11 @@ function getGeoDetails(lat_crd, long_crd) {
   });
 }
 
+/**
+ * Helper function - Generates UTC string to pass to getTimeZoneID
+ * @param  {Object} dateObj  Today's Date object
+ * @return {string}          UTC string with user's local time, used in getTimeZoneID query
+ */
 function convToUTC(dateObj) {
   var time = dateObj;
   time = time.toISOString();
@@ -516,6 +545,13 @@ function convToUTC(dateObj) {
   return time;
 }
 
+/**
+ * Determine the user's timezone via Google Time Zone API, and then passes all data to hebCalShab
+ * @param  {string} city  User's city info - will be passed to Hebcal
+ * @param  {number} lat   User lattitude coordinates
+ * @param  {number} long  User longitude coordinates
+ * @param  {string} utc   UTC string containing user's local time info
+ */
 function getTimeZoneID(city, lat,long, utc) {
   var tzKey = 'AIzaSyDgpmHtOYqSzG9JgJf98Isjno6YwVxCrEE';
   var tzUrlBase = 'https://maps.googleapis.com/maps/api/timezone/json?location=';
@@ -536,8 +572,8 @@ function getTimeZoneID(city, lat,long, utc) {
 
 /**
  * Removes leading 0 from 2-digit month or date numbers and returns to generateTimeStrings
- * @param  {int} x Numerical time passed from generateTimeStrings()
- * @return {int}   1-digit version of int `x` that was passed in
+ * @param  {number} x  Month number passed from generateTimeStrings()
+ * @return {number}    Month number sans leading zero
  */
 function formatTime(x) {
   var reformattedTime = x.toString();
@@ -546,8 +582,10 @@ function formatTime(x) {
 }
 
 /**
- * Splits time object into year, month, day, hour, min, sec and returns buildTimeStr
- * @param  {int} timeObj Value passed in from generateTimes() after formatting from formatTime()
+ * Helper function for timesHelper().
+ * Splits timeObj array into year, month, day, hour, min, sec and returns a string with time info,
+ * to be used in generating the final strings viewed by the user
+ * @param  {number} timeObj Value passed in from generateTimes() after formatting from formatTime()
  * @return {string}   Time String in Y-M-D-H-M
  */
 function generateSunStrings(timeObj) {
@@ -556,14 +594,17 @@ function generateSunStrings(timeObj) {
   var day = formatTime(timeObj.getDate());
   var hour = formatTime(timeObj.getHours());
   var min = formatTime(timeObj.getMinutes());
-  // var sec = formatTime(timeObj.getSeconds());
   var buildTimeStr = year + '-' + month + '-' + day + ' ' + hour + ':' + min;
   return buildTimeStr;
 }
 
-/* Will likely deprecate, since I can do this part with hebCalShab
-    May still need for Min7a, Peleg, Shema, et al
-*/
+/**
+ * Helper function to prepare final strings that the user will view
+ * May deprecate in future, in favor of hebCalShab() or similar approach
+ * @param  {number} lat   User's lattitude coordinates
+ * @param  {number} long  User's longitude coordinates
+ * @return {string}       Time String in Y-M-D-H-M
+ */
 function timesHelper(lat, long) {
   var todayTimesObj = SunCalc.getTimes(new Date(), lat, long);
   var todayTimes = calculateSunTimes(todayTimesObj, false);
@@ -575,8 +616,8 @@ function timesHelper(lat, long) {
 
 /**
  * Splits time object into year, month, day, hour, min, sec and returns buildTimeStr
- * @param  {int} timeObj Value passed in from generateTimes() after formatting from formatTime()
- * @return {string}   Time String in Y-M-D-H-M
+ * @param  {number} timeObj Value passed from generateTimes() after formatting from formatTime()
+ * @return {string}         Time String in Y-M-D-H-M
  */
 function generateTimeStrings(timeSet, shabbat) {
   var sunrise = timeSet[0];
@@ -607,9 +648,10 @@ function generateTimeStrings(timeSet, shabbat) {
 
 /**
  * [calculateSunTimes description]
- * @param  {array} timeObj  Contains soon-to-be manupulated time data
- * @param  {boolean} shabbat Determines whether we are calculate times for Shabbath or weekday
- * @return {array}         An array of time value integers
+ * @param  {array} timeObj   Contains soon-to-be manupulated time data
+ * @param  {boolean} shabbat Determines whether we are calculating
+ * times for Shabbath or weekday
+ * @return {array}           An array of time value integers
  */
 function calculateSunTimes(timeObj, shabbat) {
   var times = timeObj;
@@ -630,7 +672,7 @@ function calculateSunTimes(timeObj, shabbat) {
 
 /**
  * [unixTimestampToDate description]
- * @param  {int} timestamp UTC Timestamp
+ * @param  {number} timestamp UTC Timestamp
  * @return {string}           Time in H:M:S
  * @since  1.0.0
  */
@@ -653,9 +695,9 @@ function unixTimestampToDate(timestamp) {
 
 /**
  * Calculates the latest halakhic time to say the Shema Yisrael prayer
- * @param  {int} sunriseSec The time of sunrise, in seconds
- * @param  {int} sunsetSec  Time of sunset, in seconds
- * @param  {int} offSetSec  Offset for Time Zone and DST
+ * @param  {number} sunriseSec The time of sunrise, in seconds
+ * @param  {number} sunsetSec  Time of sunset, in seconds
+ * @param  {number} offSetSec  Offset for Time Zone and DST
  * @return {string}            Formatted string in H:M:S
  * @see unixTimestampToDate
  * @since  1.0.0
@@ -670,9 +712,9 @@ function calculateLatestShema(sunriseSec, sunsetSec, offSetSec) {
 
 /**
  * Calculates the earliest halakhic time to pray Minḥa
- * @param  {int} sunriseSec The time of sunrise, in seconds
- * @param  {int} sunsetSec  Time of sunset, in seconds
- * @param  {int} offSetSec  Offset for Time Zone and DST
+ * @param  {number} sunriseSec The time of sunrise, in seconds
+ * @param  {number} sunsetSec  Time of sunset, in seconds
+ * @param  {number} offSetSec  Offset for Time Zone and DST
  * @return {string}            Formatted string in H:M:S
  * @see unixTimestampToDate
  */
@@ -686,9 +728,9 @@ function calculateEarliestMinha(sunriseSec, sunsetSec, offSetSec) {
 
 /**
  * Calculates the latest halakhic time to pray Minḥa
- * @param  {int} sunriseSec The time of sunrise, in seconds
- * @param  {int} sunsetSec  Time of sunset, in seconds
- * @param  {int} offSetSec  Offset for Time Zone and DST
+ * @param  {number} sunriseSec The time of sunrise, in seconds
+ * @param  {number} sunsetSec  Time of sunset, in seconds
+ * @param  {number} offSetSec  Offset for Time Zone and DST
  * @return {string}            Formatted string in H:M:S
  * @see unixTimestampToDate
  */
@@ -712,7 +754,7 @@ function calculatePelegHaMinha(sunriseSec, sunsetSec, offSetSec) {
  * @since  1.0.0
  */
 function displayTimes(todaySet, shabbatSet, city, date) {
-  /* Weekday */
+	// Weekday
   var shema = todaySet[0];
   var minha = todaySet[1];
   var peleg = todaySet[2];
@@ -725,17 +767,15 @@ function displayTimes(todaySet, shabbatSet, city, date) {
   z_peleg.innerHTML = peleg + '<br>';
   z_sunset.innerHTML = sunset + '<br>';
 
-  /* Shabbath */
+	// Shabbath
   var sh_engdate = shabbatSet[0];
   var sh_perasha_en = shabbatSet[1];
-  // var city = cityStr;
   var sh_hebdate = shabbatSet[2];
   var sh_perasha_he = shabbatSet[3];
   var sh_candles = shabbatSet[4];
   var sh_sunset = shabbatSet[5];
   var sh_habdala = shabbatSet[6];
 
-  // sz_city.innerHTML = city + '<br>';
   sz_date.innerHTML = sh_engdate + '<br>';
   sz_perasha.innerHTML = sh_perasha_en + '<br>';
   sz_date_heb.innerHTML = sh_hebdate + '<br>';
@@ -745,8 +785,7 @@ function displayTimes(todaySet, shabbatSet, city, date) {
   sz_habdala.innerHTML = sh_habdala + '<br>';
 }
 
-
-  // Make sure we're ready to run our script!
-  jQuery(document).ready(function($) {
-    getLocation();
-  });
+// Make sure we're ready to run our script!
+jQuery(document).ready(function($) {
+  getLocation();
+});

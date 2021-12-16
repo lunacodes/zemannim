@@ -16,18 +16,12 @@
  * Change Record:
  * ***********************************
  * 2018- - initial creation
- *
- *   This program is free software: you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation,version 3
- *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
- *
- *   For details about the GNU General Public License, see <http://www.gnu.org/licenses/>.
- *   For details about this program, see the readme file.
+ * 2019-02-04 1.3.1
+ * 2019-02-06 1.3.2
+ * 2019-03-27 1.3.3
+ * 2019-03-28 1.3.4
+ * 2019-06-23 1.4
+ * 2020-12-16 1.4.1 Add docblocks to JS Code
  */
 
 /**
@@ -62,24 +56,19 @@ class Luna_Zemanim_Widget_Hebcal extends WP_Widget {
 	 * @param array $instance   Saved values from database.
 	 */
 	public function widget( $args, $instance ) {
-
 		$suncalc_version  = date( 'ymd-Gis', filemtime( plugin_dir_path( __FILE__ ) . 'suncalc-master/suncalc.js' ) );
-		$zemannim_version  = date( 'ymd-Gis', filemtime( plugin_dir_path( __FILE__ ) . 'zemannim.js' ) );
+		$zemannim_version = date( 'ymd-Gis', filemtime( plugin_dir_path( __FILE__ ) . 'zemannim.js' ) );
 
-		// These will always enqueue in footer, b/c this is after header.
-		// However, google maps seems to be enqueued up top anyway?
 		wp_enqueue_script( 'suncalc-master', plugins_url( '/suncalc-master/suncalc.js', __FILE__ ), '', $suncalc_version, true );
 		wp_enqueue_script( 'google-maps-zemannim', 'https://maps.googleapis.com/maps/api/js?v=3.exp&key=AIzaSyDgpmHtOYqSzG9JgJf98Isjno6YwVxCrEE', array(), $zemannim_version, true );
 		wp_enqueue_script( 'zemannim-js', plugins_url( '/zemannim.js', __FILE__ ), array(), $zemannim_version, true );
 
 		$title = apply_filters( 'widget_title', $instance['title'] );
 
-		// phpcs:disable
 		echo $args['before_widget'];
 		if ( ! empty( $title ) ) {
 			echo $args['before_title'] . $title . $args['after_title'];
 		}
-		// phpcs:enable
 
 		/**
 		 * Generates the Hebrew Date from a passed in date object
@@ -117,12 +106,12 @@ class Luna_Zemanim_Widget_Hebcal extends WP_Widget {
 				$friday = strtotime( 'next friday' );
 			}
 
-			$today_str = $today;
-			$shabbat_iso = date( DATE_ISO8601, $friday );
-			$today_heb_str = generateHebrewDate( $today_int );
-			$shabbat_str = date( 'F, j, Y', $friday );
+			$today_str       = $today;
+			$shabbat_iso     = date( DATE_ISO8601, $friday );
+			$today_heb_str   = generateHebrewDate( $today_int );
+			$shabbat_str     = date( 'F, j, Y', $friday );
 			$shabbat_heb_str = generateHebrewDate( $friday );
-			$dates = [ $today_str, $today_heb_str, $shabbat_str, $shabbat_heb_str, $shabbat_iso ];
+			$dates           = [ $today_str, $today_heb_str, $shabbat_str, $shabbat_heb_str, $shabbat_iso ];
 			return $dates;
 		}
 		$dates = generatePreDates();
@@ -135,9 +124,9 @@ class Luna_Zemanim_Widget_Hebcal extends WP_Widget {
 		 * @param  list $dates A list containing date strings to be outputted in the HTML.
 		 */
 		function outputPreDates( $dates ) {
-			$today = $dates[0];
-			$today_heb = $dates[1];
-			$shabbat = $dates[2];
+			$today       = $dates[0];
+			$today_heb   = $dates[1];
+			$shabbat     = $dates[2];
 			$shabbat_heb = $dates[3];
 
 			?>
@@ -160,7 +149,6 @@ class Luna_Zemanim_Widget_Hebcal extends WP_Widget {
 						<span id="shzm_date">Shabbat Times for <?php echo( esc_attr( $shabbat ) ); ?><br></span>
 						<span id="shzm_perasha">Perasha <br></span>
 						<span id="shzm_date_heb"><?php echo( esc_attr( $shabbat_heb ) ); ?><br></span>
-						<!-- <span id="shzm_city"></span> -->
 						<span id="shzm_perasha_heb"></span>
 						<span id="shzm_candles">Sunset: <br></span>
 						<span id="shzm_sunset">Sunset: <br></span>
@@ -172,10 +160,6 @@ class Luna_Zemanim_Widget_Hebcal extends WP_Widget {
 		}
 
 		outputPreDates( $dates );
-		?>
-		<!-- <script async type="text/javascript" src="zemannim.js"></script> -->
-
-		<?php
 		echo $args['after_widget'];
 
 	} // public function widget ends here.
