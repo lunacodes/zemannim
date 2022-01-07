@@ -3,9 +3,7 @@
  * Plugin Name: Daily Zemannim by lunacodes
  * Plugin URI: https://lunacodesdesign.com/
  * Description: Displays Zemannim (times) according to Sepharadic tradition.
- *   Uses the DB-IP API and the Google Maps API for geographic information.
- *   Uses the Sun-Calc Library (https://github.com/mourner/suncalc) for sunrise/sunset information.
- * Version: 1.4
+ * Version: 1.4.2
  *
  * @author Luna Lunapiena
  * @link: https://lunacodesdesign.com/
@@ -13,15 +11,6 @@
  * License: GPL3+
  * License URI: https://www.gnu.org/licenses/gpl-3.0.html
  * Text Domain: luna_zemanim_widget_hebcal_domain
- * Change Record:
- * ***********************************
- * 2018- - initial creation
- * 2019-02-04 1.3.1
- * 2019-02-06 1.3.2
- * 2019-03-27 1.3.3
- * 2019-03-28 1.3.4
- * 2019-06-23 1.4
- * 2020-12-16 1.4.1 Add docblocks to JS Code
  */
 
 /**
@@ -78,10 +67,10 @@ class Luna_Zemanim_Widget_Hebcal extends WP_Widget {
 		 */
 		function generateHebrewDate( $date ) {
 			$month = idate( 'm', $date );
-			$day = idate( 'j', $date );
-			$year = idate( 'Y', $date );
+			$day   = idate( 'j', $date );
+			$year  = idate( 'Y', $date );
 			$jdate = gregoriantojd( $month, $day, $year );
-			$jd2 = jdtojewish( $jdate, true, CAL_JEWISH_ADD_GERESHAYIM );
+			$jd2   = jdtojewish( $jdate, true, CAL_JEWISH_ADD_GERESHAYIM );
 
 			$heb_date_str = mb_convert_encoding( "$jd2", 'utf-8', 'ISO-8859-8' );
 			return $heb_date_str;
@@ -95,12 +84,12 @@ class Luna_Zemanim_Widget_Hebcal extends WP_Widget {
 		 * @return array Contains English and Hebrew dates the current day and upcoming Shabbath
 		 */
 		function generatePreDates() {
-			$today = date( 'F, j, Y' );
-			$today_int = strtotime( 'now' );
+			$today       = date( 'F, j, Y' );
+			$today_int   = strtotime( 'now' );
 			$day_of_week = date( 'N' );
-			if ( 5 == $day_of_week ) {
+			if ( 5 === $day_of_week ) {
 				$friday = strtotime( 'now' );
-			} elseif ( 6 == $day_of_week ) {
+			} elseif ( 6 === $day_of_week ) {
 				$friday = strtotime( 'yesterday' );
 			} else {
 				$friday = strtotime( 'next friday' );
@@ -201,7 +190,7 @@ class Luna_Zemanim_Widget_Hebcal extends WP_Widget {
 	 * @return array Updated safe values to be saved.
 	 */
 	public function update( $new_instance, $old_instance ) {
-		$instance = array();
+		$instance          = array();
 		$instance['title'] = ( ! empty( $new_instance['title'] ) ) ? strip_tags( $new_instance['title'] ) : '';
 
 		return $instance;
