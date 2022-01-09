@@ -3,7 +3,7 @@
  * Plugin Name: Daily Zemannim by lunacodes
  * Plugin URI: https://lunacodesdesign.com/
  * Description: Displays Zemannim (times) according to Sepharadic tradition.
- * Version: 1.4.2
+ * Version: 1.4.3
  *
  * @author Luna Lunapiena
  * @link: https://lunacodesdesign.com/
